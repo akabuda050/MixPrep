@@ -18,6 +18,7 @@ import hashlib
 import json
 import logging
 import warnings
+from collections.abc import Callable
 from pathlib import Path
 from typing import Optional
 
@@ -89,9 +90,11 @@ class _MutagenParseError(Exception):
 
 
 def collect_audio_files(directory: Path) -> list[Path]:
-    """Return sorted list of audio files under *directory*."""
+    """Return sorted list of audio files under *directory*. Symlinks are not followed."""
     return sorted(
-        p for p in directory.rglob("*") if p.is_file() and p.suffix.lower() in AUDIO_EXTENSIONS
+        p
+        for p in directory.rglob("*")
+        if not p.is_symlink() and p.is_file() and p.suffix.lower() in AUDIO_EXTENSIONS
     )
 
 
@@ -99,7 +102,7 @@ def scan_library(
     directory: Path,
     existing: list[TrackIndex],
     files: list[Path] | None = None,
-    progress_callback: object = None,
+    progress_callback: Callable[[Path], None] | None = None,
 ) -> list[TrackIndex]:
     """
     Scan *directory* recursively for audio files.
@@ -115,7 +118,15 @@ def scan_library(
     Files mutagen opens but with missing metadata fields retain null values.
     """
     hash_to_id: dict[str, str] = {e.file_hash: e.track_id for e in existing}
-    paths = files if files is not None else collect_audio_files(directory)
+    _raw_paths = files if files is not None else collect_audio_files(directory)
+    # Deduplicate: keep first occurrence of each resolved path
+    seen_resolved: set[Path] = set()
+    paths: list[Path] = []
+    for p in _raw_paths:
+        rp = p.resolve()
+        if rp not in seen_resolved:
+            seen_resolved.add(rp)
+            paths.append(p)
     results: list[TrackIndex] = []
 
     for path in paths:
@@ -153,7 +164,7 @@ def write_scan(entries: list[TrackIndex], dest: Path) -> None:
     dest.parent.mkdir(parents=True, exist_ok=True)
     tmp = dest.with_suffix(".tmp")
     data = [e.model_dump() for e in entries]
-    tmp.write_text(json.dumps(data, indent=2), encoding="utf-8")
+    tmp.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
     tmp.replace(dest)
 
 
