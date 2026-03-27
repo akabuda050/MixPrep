@@ -7,10 +7,21 @@ Analyzes your music library using machine learning to extract genre, mood, energ
 ## What it does
 
 - **Scan** — indexes your music library, assigns stable track IDs
-- **Analyze** — reads BPM and key from file metadata (set by your DJ software); analyzes audio directly if missing
-- **Classify** — runs ML models to detect genre, mood, energy, danceability, vocals, instruments
+- **Analyze** — reads BPM and key from file tags (set by your DJ software); runs ML models to detect genre, mood, energy, danceability, vocals, instruments
 - **Build** — generates candidate mix sets for a chosen profile using beam search
-- **Export** — outputs playlists as M3U, HTML, or CSV
+
+## Workflow
+
+```
+1. Download models        mixprep models download
+2. Scan your library      mixprep scan /path/to/music
+3. Analyze tracks         mixprep analyze --stage ingest
+                          mixprep analyze --stage essentia
+                          mixprep analyze --stage classify
+4. Build a set            mixprep build --profile peak --duration 60
+```
+
+`--duration` is in minutes. Each step produces reviewable JSON files you can inspect before running the next one.
 
 ## Requirements
 
@@ -141,47 +152,54 @@ Removes the cached model file. Use `download` to re-fetch.
 | `essentia-arousal-valence-muse` | Arousal + valence [1–9] — MuSe dataset |
 | `essentia-moods-mirex` | 5 MIREX mood clusters |
 
-## Output schema
+## Output
 
-Each classified track produces:
+Analysis results are stored in `~/.local/share/mixprep/data` (override with `MIXPREP_DATA_DIR`):
+
+```
+~/.local/share/mixprep/data/
+├── scan.json                   # library index (track IDs, paths, hashes)
+├── metadata/<track_id>.json    # BPM, key, title, artist from file tags
+├── essentia/<track_id>.json    # raw ML scores + time curves
+├── tracks/<track_id>.json      # unified per-track intelligence
+└── sets/<hash>_set.json        # generated DJ set plan
+```
+
+Each file is plain JSON — open and inspect at any stage.
+
+### Track intelligence (`tracks/<track_id>.json`)
 
 ```json
 {
   "track_id": "2abc...",
-  "file_path": "/music/techno/artist - title.mp3",
-  "title": "Title",
-  "artist": "Artist",
-  "bpm": 138.0,
-  "key": "Am",
-  "duration": 420.5,
-  "genres": [{"label": "Techno", "score": 0.82}],
-  "mood_tags": [{"label": "energetic", "score": 0.91}],
-  "instruments": [{"label": "synthesizer", "score": 0.74}],
-  "mood": {
+  "genres": [{"label": "Techno", "score": 0.82, "sources": ["maest", "effnet"]}],
+  "tags": [{"label": "energetic", "score": 0.91, "sources": ["mood_theme"]}],
+  "instruments": [{"label": "synthesizer", "score": 0.74, "sources": ["instrument"]}],
+  "scores": {
+    "danceability": 0.88,
     "arousal": 7.2,
     "valence": 4.1,
-    "danceability": 0.88,
     "aggressive": 0.71,
-    "happy": 0.12,
     "party": 0.83,
-    "relaxed": 0.15,
-    "sad": 0.08,
-    "acoustic": 0.05,
     "tonal": 0.92,
     "timbre_bright": 0.61,
-    "approachability": 0.78,
-    "engagement": 0.85,
-    "vocal_probability": 0.22,
-    "vocalist_gender": 0.40
+    "vocal_probability": 0.22
   },
+  "profile": {
+    "energy_level": 0.74,
+    "mixability": 0.81,
+    "warmup_score": 0.34,
+    "peak_time_score": 0.87,
+    "closing_score": 0.29
+  },
+  "structure": [
+    {"label": "intro", "start": 0.0, "end": 32.1, "confidence": 0.71},
+    {"label": "drop", "start": 58.2, "end": 86.7, "confidence": 0.76}
+  ],
   "flags": {
     "low_confidence": false,
-    "essentia_failed": false,
-    "bpm_from_metadata": true,
-    "key_from_metadata": true
+    "essentia_failed": false
   }
 }
 ```
-
-`file_path` is the stable reference across all pipeline stages. `track_id` is a KSUID used internally. BPM and key come from file metadata when available (`bpm_from_metadata: true`); the flags indicate the source so you know whether to trust DJ software analysis or Essentia's fallback.
 
