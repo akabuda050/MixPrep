@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mixprep"
+version = "0.1.0"
+description = "DJ library intelligence and mix-set generation"
+requires-python = ">=3.11"
+dependencies = [
+    "typer>=0.12",
+    "rich>=13",
+    "pydantic>=2.6",
+    "pyyaml>=6.0",
+    "numpy",
+    "essentia-tensorflow",  # includes essentia — do NOT also install bare essentia
+    "tf-keras",             # Keras 2 shim required by essentia-tensorflow with TF>=2.16
+]
+
+[project.optional-dependencies]
+# Pick one: cpu for most machines, cuda for NVIDIA GPU acceleration
+cpu = [
+    "tensorflow-cpu>=2.16",
+]
+cuda = [
+    "tensorflow[and-cuda]>=2.16",
+]
+dev = [
+    "pytest>=8",
+    "pytest-cov>=5",
+    "ruff>=0.4",
+]
+
+[project.scripts]
+mixprep = "mixprep.cli.main:app"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["mixprep*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=mixprep --cov-report=term-missing"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]  # pycodestyle errors, pyflakes, isort
