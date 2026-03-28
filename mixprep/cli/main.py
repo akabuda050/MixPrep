@@ -46,6 +46,16 @@ def models_clear(
     run_clear(model=model, all=all)
 
 
+@app.command("analyze")
+def analyze(
+    stage: str = typer.Option(..., help="Pipeline stage: ingest | essentia | classify"),
+) -> None:
+    """Run an analysis stage against the scanned library."""
+    from mixprep.cli.commands.analyze import run_analyze
+
+    run_analyze(stage)
+
+
 @app.command("scan")
 def scan(
     directory: str = typer.Argument(..., help="Path to music library directory"),
