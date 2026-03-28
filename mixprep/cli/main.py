@@ -46,5 +46,17 @@ def models_clear(
     run_clear(model=model, all=all)
 
 
+@app.command("scan")
+def scan(
+    directory: str = typer.Argument(..., help="Path to music library directory"),
+) -> None:
+    """Scan a music library directory and index all audio files."""
+    from pathlib import Path
+
+    from mixprep.cli.commands.scan import run_scan
+
+    run_scan(Path(directory))
+
+
 if __name__ == "__main__":
     app()
