@@ -61,3 +61,48 @@ class TrackIndex(BaseModel):
         if v is not None and v <= 0:
             raise ValueError("sample_rate must be positive")
         return v
+
+
+# ---------------------------------------------------------------------------
+# F2 — Ingest
+# ---------------------------------------------------------------------------
+
+
+class TaggedValue(BaseModel):
+    """A single DJ tag value with provenance."""
+
+    value: Optional[float | str]  # null if the tag is absent in the file
+    source: str  # always "file_tag" for ingest stage
+    confidence: float  # always 1.0 for file tags
+
+    @field_validator("source")
+    @classmethod
+    def source_nonempty(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("source must not be empty")
+        return v
+
+    @field_validator("confidence")
+    @classmethod
+    def confidence_in_range(cls, v: float) -> float:
+        if not (0.0 <= v <= 1.0):
+            raise ValueError("confidence must be in [0, 1]")
+        return v
+
+
+class TrackMetadata(BaseModel):
+    """DJ tag metadata extracted from file tags."""
+
+    track_id: str
+    bpm: Optional[TaggedValue]  # null if tag absent
+    key: Optional[TaggedValue]  # null if tag absent
+    title: Optional[str]
+    artist: Optional[str]
+    album: Optional[str]
+
+    @field_validator("track_id")
+    @classmethod
+    def track_id_nonempty(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("track_id must not be empty")
+        return v
