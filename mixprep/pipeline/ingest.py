@@ -36,6 +36,8 @@ def _get_tag(tags: object, *keys: str) -> str | None:
         if isinstance(val, list):
             val = val[0] if val else None
         if val is not None:
+            if isinstance(val, bytes):
+                val = val.decode("utf-8", errors="replace")
             s = str(val).strip()
             if s:
                 return s
@@ -74,11 +76,33 @@ def ingest_track(track: TrackIndex) -> TrackMetadata:
     def tagged(value: float | str | None) -> TaggedValue | None:
         return TaggedValue(value=value, source=_FILE_TAG_SOURCE, confidence=_FILE_TAG_CONFIDENCE)
 
-    bpm_raw = _get_tag(tags, "TBPM", "tbpm", "BPM", "bpm", "fBPM")
+    # ID3 (MP3): TBPM / TKEY
+    # Vorbis (FLAC, OGG): BPM / KEY
+    # MP4/M4A: tmpo (integer BPM atom) / ----:com.apple.iTunes:initialkey (freeform)
+    bpm_raw = _get_tag(
+        tags,
+        "TBPM",
+        "tbpm",
+        "BPM",
+        "bpm",
+        "fBPM",
+        "tmpo",
+        "----:com.apple.iTunes:BPM",
+    )
     bpm_val = _parse_bpm(bpm_raw)
     bpm = tagged(bpm_val) if bpm_val is not None else None
 
-    key_raw = _get_tag(tags, "TKEY", "tkey", "KEY", "key", "initialkey", "INITIALKEY")
+    key_raw = _get_tag(
+        tags,
+        "TKEY",
+        "tkey",
+        "KEY",
+        "key",
+        "initialkey",
+        "INITIALKEY",
+        "----:com.apple.iTunes:initialkey",
+        "----:com.apple.iTunes:INITIALKEY",
+    )
     key = tagged(key_raw) if key_raw is not None else None
 
     title = _get_tag(tags, "TIT2", "tit2", "\xa9nam", "TITLE", "title")

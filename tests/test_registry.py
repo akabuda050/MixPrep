@@ -94,9 +94,7 @@ class TestProductionManifest:
             "essentia-discogs-effnet",
             "essentia-maest",
             "essentia-genre-jamendo",
-            "essentia-mood-theme",
             "essentia-arousal-valence-muse",
-            "essentia-moods-mirex",
         ]
         for name in expected:
             assert registry.get(name) is not None, f"Missing model: {name}"

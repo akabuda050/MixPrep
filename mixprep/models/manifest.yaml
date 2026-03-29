@@ -4,7 +4,7 @@
 #
 # discogs-effnet: primary embedding — fast, 18MB, powers most heads.
 # maest:          best genre accuracy — 348MB transformer, 519 styles.
-# msd-musicnn:    needed for arousal/valence and MIREX mood heads.
+# msd-musicnn:    needed for arousal head only.
 
 models:
 
@@ -33,7 +33,7 @@ models:
   essentia-msd-musicnn:
     url: "https://essentia.upf.edu/models/autotagging/msd/msd-musicnn-1.pb"
     framework: tensorflow
-    description: "MSD-MusiCNN embedding — required for arousal/valence and MIREX mood"
+    description: "MSD-MusiCNN embedding — required for arousal head"
 
   # ── Genre heads (discogs-effnet) ─────────────────────────────────────────────
 
@@ -46,48 +46,6 @@ models:
     url: "https://essentia.upf.edu/models/classification-heads/mtg_jamendo_genre/mtg_jamendo_genre-discogs-effnet-1.json"
     framework: json
     description: "Label metadata for MTG-Jamendo genre — 87 class names"
-
-  # ── Mood / theme heads (discogs-effnet) ──────────────────────────────────────
-
-  essentia-mood-theme:
-    url: "https://essentia.upf.edu/models/classification-heads/mtg_jamendo_moodtheme/mtg_jamendo_moodtheme-discogs-effnet-1.pb"
-    framework: tensorflow
-    description: "MTG-Jamendo mood/theme — 56 tags (energetic, dark, groovy, party, calm, etc.)"
-
-  essentia-mood-theme-labels:
-    url: "https://essentia.upf.edu/models/classification-heads/mtg_jamendo_moodtheme/mtg_jamendo_moodtheme-discogs-effnet-1.json"
-    framework: json
-    description: "Label metadata for MTG-Jamendo mood/theme — 56 class names"
-
-  essentia-mood-aggressive:
-    url: "https://essentia.upf.edu/models/classification-heads/mood_aggressive/mood_aggressive-discogs-effnet-1.pb"
-    framework: tensorflow
-    description: "Aggressive mood (binary)"
-
-  essentia-mood-happy:
-    url: "https://essentia.upf.edu/models/classification-heads/mood_happy/mood_happy-discogs-effnet-1.pb"
-    framework: tensorflow
-    description: "Happy mood (binary)"
-
-  essentia-mood-party:
-    url: "https://essentia.upf.edu/models/classification-heads/mood_party/mood_party-discogs-effnet-1.pb"
-    framework: tensorflow
-    description: "Party mood (binary)"
-
-  essentia-mood-relaxed:
-    url: "https://essentia.upf.edu/models/classification-heads/mood_relaxed/mood_relaxed-discogs-effnet-1.pb"
-    framework: tensorflow
-    description: "Relaxed mood (binary)"
-
-  essentia-mood-sad:
-    url: "https://essentia.upf.edu/models/classification-heads/mood_sad/mood_sad-discogs-effnet-1.pb"
-    framework: tensorflow
-    description: "Sad mood (binary)"
-
-  essentia-mood-acoustic:
-    url: "https://essentia.upf.edu/models/classification-heads/mood_acoustic/mood_acoustic-discogs-effnet-1.pb"
-    framework: tensorflow
-    description: "Acoustic vs electronic (binary)"
 
   # ── Sound character heads (discogs-effnet) ───────────────────────────────────
 
@@ -118,25 +76,10 @@ models:
     framework: tensorflow
     description: "Voice vs instrumental (binary)"
 
-  essentia-gender:
-    url: "https://essentia.upf.edu/models/classification-heads/gender/gender-discogs-effnet-1.pb"
-    framework: tensorflow
-    description: "Vocalist gender — female vs male (binary)"
-
   essentia-danceability:
     url: "https://essentia.upf.edu/models/classification-heads/danceability/danceability-discogs-effnet-1.pb"
     framework: tensorflow
     description: "Danceability — danceable vs not (binary)"
-
-  essentia-instrument:
-    url: "https://essentia.upf.edu/models/classification-heads/mtg_jamendo_instrument/mtg_jamendo_instrument-discogs-effnet-1.pb"
-    framework: tensorflow
-    description: "MTG-Jamendo instrument — 40 instrument tags"
-
-  essentia-instrument-labels:
-    url: "https://essentia.upf.edu/models/classification-heads/mtg_jamendo_instrument/mtg_jamendo_instrument-discogs-effnet-1.json"
-    framework: json
-    description: "Label metadata for MTG-Jamendo instrument — 40 class names"
 
   # ── MSD-MusiCNN heads ────────────────────────────────────────────────────────
 
@@ -145,7 +88,3 @@ models:
     framework: tensorflow
     description: "Arousal + valence regression [1-9] — MuSe dataset"
 
-  essentia-moods-mirex:
-    url: "https://essentia.upf.edu/models/classification-heads/moods_mirex/moods_mirex-msd-musicnn-1.pb"
-    framework: tensorflow
-    description: "MIREX mood clusters (5 classes) — passionate, cheerful, wistful, humorous, aggressive"

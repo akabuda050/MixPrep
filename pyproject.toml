@@ -17,6 +17,7 @@ dependencies = [
     "tf-keras",             # Keras 2 shim required by essentia-tensorflow with TF>=2.16
     "mutagen>=1.47",        # audio tag reading + format/duration/sample_rate (no full decode)
     "cyksuid>=2.0",         # KSUID generation for stable track IDs
+    "librosa>=0.10",        # RMS, onset strength, band energies, novelty curves
 ]
 
 [project.optional-dependencies]

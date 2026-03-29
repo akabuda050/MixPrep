@@ -145,7 +145,7 @@ def scan_library(
 
         entry = TrackIndex(
             track_id=track_id,
-            file_path=str(path),
+            file_path=str(path.resolve()),
             file_hash=file_hash,
             duration=duration,
             format=fmt,
