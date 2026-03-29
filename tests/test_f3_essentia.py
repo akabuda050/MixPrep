@@ -137,8 +137,8 @@ def test_run_essentia_arousal_range():
     track = _make_track()
     output = _run_with_mocks(track)
 
-    # arousal is [1–9] MuSe scale — our fake returns dim 0 = 5.0
-    assert output.scores.arousal == pytest.approx(5.0)
+    # arousal is [1–9] DEAM scale — fake returns (valence=5.0, arousal=4.0), dim 1 = 4.0
+    assert output.scores.arousal == pytest.approx(4.0)
 
 
 def test_run_essentia_raw_activations_present():

@@ -145,13 +145,12 @@ def load_models() -> None:
     _models["danceability"] = _effnet_head("danceability-discogs-effnet-1.pb")
 
     # ── musicnn heads (musicnn embedding input) ──────────────────────────────
-    # muse-msd-musicnn: ONNX-converted model — node names differ from default.
-    # input="flatten_in_input", output="dense_out" → shape (frames, 2) in [1–9] scale.
-    # Only arousal (dim 0) is used; valence is excluded (unreliable for EDM).
+    # deam-msd-musicnn: output shape (frames, 2) → (valence, arousal) in [1–9] scale.
+    # dim 1 = arousal (verified against DEAM dataset convention).
+    # Valence excluded — unreliable for EDM.
     _models["arousal_valence"] = es.TensorflowPredict2D(
-        graphFilename=_model_path("muse-msd-musicnn-1.pb"),
-        input="flatten_in_input",
-        output="dense_out",
+        graphFilename=_model_path("deam-msd-musicnn-2.pb"),
+        output="model/Identity",
     )
 
     _models_loaded = True
@@ -307,11 +306,11 @@ def run_essentia(track: TrackIndex) -> EssentiaOutput:
     # Binary head positive-class indices (verified by running real inference):
     #   idx 0 = positive: danceability(danceable), tonal
     #   idx 1 = positive: timbre(bright), voice(vocal)
-    # arousal_valence: dim 0 = arousal [1–9] MuSe scale (valence excluded — unreliable)
+    # arousal_valence: (valence, arousal) — DEAM convention. dim 1 = arousal [1–9].
     av_mean = _pool_mean(av_act)
     scores = EssentiaScores(
         danceability=_binary_score(dance_act, idx=0),
-        arousal=float(av_mean[0]) if len(av_mean) >= 1 else None,
+        arousal=float(av_mean[1]) if len(av_mean) >= 2 else None,
         tonal=_binary_score(tonal_act, idx=0),
         timbre_bright=_binary_score(timbre_act, idx=1),
         approachability=float(_pool_mean(approach_act)[0]),

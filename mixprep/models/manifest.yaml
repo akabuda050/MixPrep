@@ -83,8 +83,13 @@ models:
 
   # ── MSD-MusiCNN heads ────────────────────────────────────────────────────────
 
-  essentia-arousal-valence-muse:
-    url: "https://essentia.upf.edu/models/classification-heads/muse/muse-msd-musicnn-1.pb"
+  essentia-arousal-valence-deam:
+    url: "https://essentia.upf.edu/models/classification-heads/deam/deam-msd-musicnn-2.pb"
     framework: tensorflow
-    description: "Arousal + valence regression [1-9] — MuSe dataset"
+    description: "Arousal regression [1-9] — DEAM dataset, better range than MuSe"
+
+  essentia-arousal-valence-deam-labels:
+    url: "https://essentia.upf.edu/models/classification-heads/deam/deam-msd-musicnn-2.json"
+    framework: json
+    description: "Label metadata for deam arousal-valence — confirms (valence, arousal) output order"
 
