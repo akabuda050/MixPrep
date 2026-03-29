@@ -134,23 +134,16 @@ Removes the cached model file. Use `download` to re-fetch.
 | `essentia-discogs-effnet-labels` | Label metadata for discogs-effnet (400 Discogs styles) |
 | `essentia-maest` | Best genre accuracy — MAEST transformer, 519 Discogs styles |
 | `essentia-maest-labels` | Label metadata for MAEST |
-| `essentia-msd-musicnn` | Secondary embedding — required for arousal/valence and MIREX mood |
+| `essentia-msd-musicnn` | Secondary embedding — required for arousal head |
 | `essentia-genre-jamendo` | 87 genre tags (house, techno, ambient, etc.) |
 | `essentia-genre-jamendo-labels` | Label metadata for Jamendo genre |
-| `essentia-mood-theme` | 56 mood/theme tags (energetic, dark, groovy, etc.) |
-| `essentia-mood-theme-labels` | Label metadata for mood/theme |
-| `essentia-mood-aggressive/happy/party/relaxed/sad/acoustic` | Binary mood scores |
 | `essentia-tonal-atonal` | Tonal vs atonal — harmonic mixing compatibility |
 | `essentia-timbre` | Bright vs dark timbre |
 | `essentia-approachability` | Mainstream vs niche [0–1] |
 | `essentia-engagement` | Active vs background listening [0–1] |
-| `essentia-voice-instrumental` | Vocals vs instrumental |
-| `essentia-gender` | Vocalist gender |
-| `essentia-danceability` | Danceability score |
-| `essentia-instrument` | 40 instrument tags |
-| `essentia-instrument-labels` | Label metadata for instrument |
-| `essentia-arousal-valence-muse` | Arousal + valence [1–9] — MuSe dataset |
-| `essentia-moods-mirex` | 5 MIREX mood clusters |
+| `essentia-voice-instrumental` | Vocal probability [0–1] |
+| `essentia-danceability` | Danceability score [0–1] |
+| `essentia-arousal-valence-muse` | Arousal [1–9] — MuSe dataset (valence excluded) |
 
 ## Output
 
@@ -167,6 +160,18 @@ Analysis results are stored in `~/.local/share/mixprep/data` (override with `MIX
 
 Each file is plain JSON — open and inspect at any stage.
 
+### Score reference
+
+| Score | Range | Meaning |
+|---|---|---|
+| `danceability` | 0–1 | How suitable the track is for dancing. High = danceable, low = not. |
+| `arousal` | 1–9 | Energy and intensity level (MuSe scale). ~3 = calm/ambient, ~5–6 = mid-energy house, ~8 = peak techno. |
+| `tonal` | 0–1 | How harmonic/melodic the track is. High = tonal (chords, melody), low = atonal (noise, pure rhythm). |
+| `timbre_bright` | 0–1 | Brightness of the sound. High = bright/sharp (lots of highs), low = dark/warm (more bass/sub). |
+| `approachability` | 0–1 | How mainstream the sound is. High = accessible/commercial, low = niche/experimental. |
+| `engagement` | 0–1 | Whether the track demands active listening. High = foreground/engaging, low = background/chill. |
+| `vocal_probability` | 0–1 | Likelihood of a human voice. > 0.5 = likely vocal, < 0.3 = likely instrumental. |
+
 ### Track intelligence (`tracks/<track_id>.json`)
 
 ```json
@@ -178,11 +183,10 @@ Each file is plain JSON — open and inspect at any stage.
   "scores": {
     "danceability": 0.88,
     "arousal": 7.2,
-    "valence": 4.1,
-    "aggressive": 0.71,
-    "party": 0.83,
     "tonal": 0.92,
     "timbre_bright": 0.61,
+    "approachability": 0.54,
+    "engagement": 0.73,
     "vocal_probability": 0.22
   },
   "profile": {

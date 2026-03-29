@@ -106,3 +106,68 @@ class TrackMetadata(BaseModel):
         if not v.strip():
             raise ValueError("track_id must not be empty")
         return v
+
+
+# ---------------------------------------------------------------------------
+# F3 — Essentia
+# ---------------------------------------------------------------------------
+
+
+class EssentiaRaw(BaseModel):
+    """Raw model outputs — exact values before any normalization."""
+
+    discogs_effnet_embedding: Optional[list[float]]
+    msd_musicnn_embedding: Optional[list[float]]
+    discogs_effnet_activations: Optional[dict[str, float]]  # 400 Discogs styles
+    maest_activations: Optional[dict[str, float]]  # 519 Discogs styles
+    jamendo_genre_activations: Optional[dict[str, float]]  # 87 Jamendo genres
+
+
+class EssentiaScores(BaseModel):
+    """Normalized scalar scores ready for downstream use.
+
+    Only scores with reliable signal for DJ use-cases are included.
+    Last.fm-derived mood tags (aggressive, happy, party, sad, acoustic, etc.)
+    are excluded — they reflect subjective tagging semantics, not DJ-relevant
+    audio properties.
+    """
+
+    danceability: Optional[float]  # [0–1] danceable vs not
+    arousal: Optional[float]  # [1–9] MuSe energy scale
+    tonal: Optional[float]  # [0–1] tonal vs atonal
+    timbre_bright: Optional[float]  # [0–1] bright vs dark timbre
+    approachability: Optional[float]  # [0–1] mainstream vs niche
+    engagement: Optional[float]  # [0–1] active vs background listening
+    vocal_probability: Optional[float]  # [0–1] vocal vs instrumental
+
+
+class TimeCurves(BaseModel):
+    """Per-frame time curves computed via librosa."""
+
+    rms: list[float]
+    onset_strength: list[float]
+    low_band: list[float]  # 0–500 Hz mean energy per frame
+    mid_band: list[float]  # 500–4000 Hz mean energy per frame
+    high_band: list[float]  # 4000+ Hz mean energy per frame
+    novelty: list[float]  # spectral novelty (onset envelope)
+
+
+class EssentiaFlags(BaseModel):
+    essentia_failed: bool
+
+
+class EssentiaOutput(BaseModel):
+    """Full Essentia stage artifact for one track."""
+
+    track_id: str
+    raw: EssentiaRaw
+    scores: EssentiaScores
+    time_curves: Optional[TimeCurves]  # null if audio load failed
+    flags: EssentiaFlags
+
+    @field_validator("track_id")
+    @classmethod
+    def track_id_nonempty(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("track_id must not be empty")
+        return v
