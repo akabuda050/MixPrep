@@ -187,14 +187,23 @@ def _binary_score(activations: np.ndarray, idx: int = 1) -> float:
     Expected input shape: (frames, 2).  *idx* selects which output index
     corresponds to the positive / target class (verified against real model
     outputs — see load_models docstring for per-model values).
+
+    Raises IndexError if the pooled output has fewer dimensions than expected,
+    which is caught by the inference try/except in run_essentia → _null_output.
     """
     v = _pool_mean(activations)
-    return float(v[idx]) if len(v) > idx else float(v[0])
+    return float(v[idx])
 
 
 def _activation_dict(activations: np.ndarray, labels: list[str]) -> dict[str, float]:
     """Map label names to mean activation scores."""
     v = _pool_mean(activations)
+    if len(labels) != len(v):
+        log.warning(
+            "Label count mismatch: %d labels vs %d model outputs — truncating to shorter",
+            len(labels),
+            len(v),
+        )
     return {label: float(v[i]) for i, label in enumerate(labels) if i < len(v)}
 
 
