@@ -46,7 +46,6 @@ def _make_track_index(**kwargs) -> TrackIndex:
     defaults = dict(
         track_id="abc",
         file_path="/music/t.mp3",
-        file_hash="deadbeef",
         duration=300.0,
         format="mp3",
         sample_rate=44100,
@@ -169,23 +168,6 @@ def test_scan_library_stable_id_on_rescan(tmp_path):
     assert second[0].track_id == first_id
 
 
-def test_scan_library_new_id_when_content_changes(tmp_path):
-    f = tmp_path / "track.mp3"
-    f.write_bytes(b"original")
-
-    with patch("mutagen.File", return_value=_mock_audio_info()):
-        first = scan_library(tmp_path, [])
-
-    first_id = first[0].track_id
-
-    f.write_bytes(b"changed-content")
-
-    with patch("mutagen.File", return_value=_mock_audio_info()):
-        second = scan_library(tmp_path, first)
-
-    assert len(second) == 1
-    assert second[0].track_id != first_id
-
 
 def test_scan_library_skips_unreadable_file(tmp_path, caplog):
     import logging
@@ -280,7 +262,7 @@ def test_scan_idempotency(tmp_path):
 
     assert len(first) == len(second) == 1
     assert first[0].track_id == second[0].track_id
-    assert first[0].file_hash == second[0].file_hash
+    assert first[0].file_path == second[0].file_path
     assert first[0].duration == second[0].duration
 
 

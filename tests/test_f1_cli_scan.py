@@ -59,7 +59,6 @@ def test_run_scan_writes_scan_json(tmp_path, monkeypatch):
     assert len(entries) == 1
     assert entries[0]["file_path"].endswith("track.mp3")
     assert entries[0]["track_id"]  # non-empty KSUID
-    assert entries[0]["file_hash"]  # MD5 was computed
     assert entries[0]["duration"] == pytest.approx(300.0)
 
 

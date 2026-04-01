@@ -2,11 +2,13 @@
 F1 — Scan stage.
 
 Walks a directory, identifies audio files, assigns stable KSUIDs keyed by
-file content hash (not path), and reads duration/sample_rate via mutagen.
+absolute file path, and reads duration/sample_rate via mutagen.
 
 Identity rule:
-    track_id is tied to file_hash. If an existing scan already contains a
-    matching file_hash, the same track_id is reused regardless of path.
+    track_id is tied to the resolved absolute file_path. If an existing scan
+    already contains a matching path, the same track_id is reused. Moving a
+    file outside of mixprep creates a new track_id (same as rekordbox/Lightroom
+    behaviour — the user must relocate).
 
 Atomic write:
     scan.json is written via .tmp + replace() to avoid partial files.
@@ -14,7 +16,6 @@ Atomic write:
 
 from __future__ import annotations
 
-import hashlib
 import json
 import logging
 import warnings
@@ -32,23 +33,13 @@ log = logging.getLogger(__name__)
 AUDIO_EXTENSIONS = frozenset({".mp3", ".flac", ".wav", ".aiff", ".aif", ".m4a", ".ogg", ".mp4"})
 
 
-def _md5(path: Path) -> str:
-    h = hashlib.md5()
-    with path.open("rb") as f:
-        for chunk in iter(lambda: f.read(65536), b""):
-            h.update(chunk)
-    return h.hexdigest()
-
-
 def _read_audio_info(
     path: Path,
 ) -> tuple[Optional[float], Optional[str], Optional[int]]:
     """
     Return (duration, format_name, sample_rate) for the given audio file.
 
-    Returns (None, None, None) if mutagen fails to open the file — the caller
-    is responsible for deciding whether to skip the file or keep it with nulls.
-
+    Raises _MutagenParseError if mutagen cannot open the file at all.
     A successful open with a missing individual field returns None for that
     field only; the file is not skipped.
     """
@@ -76,7 +67,7 @@ def _read_audio_info(
         if raw_sr is not None:
             sample_rate = int(raw_sr)
 
-    # Derive format from the mutagen class name, e.g. "MP3" from "mutagen.mp3.MP3"
+    # Derive format from the mutagen class name, e.g. "mp3" from "mutagen.mp3.MP3"
     fmt: Optional[str] = None
     cls_name = type(info).__name__
     if cls_name:
@@ -108,7 +99,7 @@ def scan_library(
     Scan *directory* recursively for audio files.
 
     existing — previously scanned entries (from scan.json). Files whose
-    file_hash matches an existing entry reuse the same track_id.
+    resolved absolute path matches an existing entry reuse the same track_id.
 
     files — optional pre-collected file list (from collect_audio_files).
     progress_callback — optional callable(path) called after each file is
@@ -117,21 +108,21 @@ def scan_library(
     Files that mutagen cannot open at all are skipped with a warning.
     Files mutagen opens but with missing metadata fields retain null values.
     """
-    hash_to_id: dict[str, str] = {e.file_hash: e.track_id for e in existing}
+    path_to_id: dict[str, str] = {e.file_path: e.track_id for e in existing}
+
     _raw_paths = files if files is not None else collect_audio_files(directory)
     # Deduplicate: keep first occurrence of each resolved path
-    seen_resolved: set[Path] = set()
+    seen: set[Path] = set()
     paths: list[Path] = []
     for p in _raw_paths:
         rp = p.resolve()
-        if rp not in seen_resolved:
-            seen_resolved.add(rp)
-            paths.append(p)
+        if rp not in seen:
+            seen.add(rp)
+            paths.append(rp)
+
     results: list[TrackIndex] = []
 
     for path in paths:
-        file_hash = _md5(path)
-
         try:
             duration, fmt, sample_rate = _read_audio_info(path)
         except _MutagenParseError as exc:
@@ -140,13 +131,12 @@ def scan_library(
                 progress_callback(path)
             continue
 
-        track_id = hash_to_id.get(file_hash) or str(ksuid())
-        hash_to_id[file_hash] = track_id
+        path_str = str(path)
+        track_id = path_to_id.get(path_str) or str(ksuid())
 
         entry = TrackIndex(
             track_id=track_id,
-            file_path=str(path.resolve()),
-            file_hash=file_hash,
+            file_path=path_str,
             duration=duration,
             format=fmt,
             sample_rate=sample_rate,
