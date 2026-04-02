@@ -228,14 +228,15 @@ def test_merge_genres_split_compound():
     from mixprep.pipeline.profile import merge_genres
     from mixprep.pipeline.schemas import EssentiaRaw
 
+    # Only 2 labels → both fit in top-3 per source, all atoms should appear
     raw = EssentiaRaw(
         discogs_effnet_embedding=None,
         msd_musicnn_embedding=None,
-        discogs_effnet_activations={"Electronic---House": 0.7, "Funk / Soul": 0.5},
+        discogs_effnet_activations={"Electronic---House": 0.7, "Funk / Soul": 0.6},
         maest_activations=None,
         jamendo_genre_activations=None,
     )
-    result = merge_genres(raw)
+    result = merge_genres(raw, top_n=10)
     labels = {g.label for g in result}
     assert "electronic" in labels
     assert "house" in labels
