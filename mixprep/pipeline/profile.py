@@ -165,49 +165,79 @@ _GENRE_SOURCES = (
 )
 
 
-def merge_genres(raw: object, top_n: int = 15) -> list[GenreLabel]:
+_SPLIT_RE = re.compile(r"---|/")
+
+
+def _split_and_normalize(label: str) -> list[str]:
+    """Split compound label on --- and / then normalize each part.
+
+    "Electronic---House" → ["electronic", "house"]
+    "Funk / Soul"        → ["funk", "soul"]
+    "techno"             → ["techno"]
+
+    Parts that become empty after stripping are discarded.
+    """
+    parts = _SPLIT_RE.split(label)
+    result = []
+    for p in parts:
+        norm = p.strip().lower().replace("-", " ").strip()
+        if norm:
+            result.append(norm)
+    return result
+
+
+def _drop_weak_parents(scores: dict[str, float]) -> dict[str, float]:
+    """Drop a label if a strictly longer label containing all its words exists
+    with score >= the parent's score.
+
+    Example: "electronic" (0.45) is dropped when "electronic house" (0.78) exists.
+    """
+    labels = list(scores.keys())
+    dropped: set[str] = set()
+    for parent in labels:
+        parent_words = set(parent.split())
+        parent_score = scores[parent]
+        for child in labels:
+            if child == parent or child in dropped:
+                continue
+            child_words = set(child.split())
+            if parent_words < child_words and scores[child] >= parent_score:
+                dropped.add(parent)
+                break
+    return {label: score for label, score in scores.items() if label not in dropped}
+
+
+_SOURCE_TOP_N = 3  # candidates taken from each source before merging
+
+
+def merge_genres(raw: object, top_n: int = 3) -> list[GenreLabel]:
     """Merge genre activations from maest, effnet, jamendo.
 
-    Deduplicates by normalized label (lowercase, strip, - → space),
-    averages scores across sources, sorts descending. Tie-break: alpha.
+    Pipeline:
+    1. Take top _SOURCE_TOP_N labels from each source by score
+    2. Split compound labels on --- and / (e.g. "Electronic---House" → ["electronic", "house"])
+    3. Merge duplicates: sum(scores) capped at 1.0
+    4. Drop weak parents: if a child label contains all words of a parent
+       and child score >= parent score, drop the parent
+    5. Sort descending by score. Tie-break: alphabetical.
+    6. Return top_n.
     """
-    merged: dict[str, dict] = {}
+    scores: dict[str, float] = {}
 
-    for source_name, field in _GENRE_SOURCES:
+    for _source_name, field in _GENRE_SOURCES:
         activations: dict[str, float] | None = getattr(raw, field, None)
         if not activations:
             continue
-        for label, score in activations.items():
-            norm = label.lower().strip().replace("-", " ")
-            if norm not in merged:
-                merged[norm] = {
-                    "original": label,
-                    "best_score": score,
-                    "total": 0.0,
-                    "count": 0,
-                    "sources": set(),
-                }
-            entry = merged[norm]
-            entry["total"] += score
-            entry["count"] += 1
-            entry["sources"].add(source_name)
-            if score > entry["best_score"]:
-                entry["best_score"] = score
-                entry["original"] = label
+        top = sorted(activations.items(), key=lambda kv: -kv[1])[:_SOURCE_TOP_N]
+        for label, score in top:
+            for norm in _split_and_normalize(label):
+                scores[norm] = min(1.0, scores.get(norm, 0.0) + score)
 
-    results = sorted(
-        merged.values(),
-        key=lambda e: (-e["total"] / e["count"], e["original"].lower()),
-    )
+    scores = _drop_weak_parents(scores)
 
-    return [
-        GenreLabel(
-            label=e["original"],
-            score=round(e["total"] / e["count"], 4),
-            sources=sorted(e["sources"]),
-        )
-        for e in results[:top_n]
-    ]
+    results = sorted(scores.items(), key=lambda kv: (-kv[1], kv[0]))
+
+    return [GenreLabel(label=label, score=round(score, 4)) for label, score in results[:top_n]]
 
 
 # ---------------------------------------------------------------------------
@@ -412,6 +442,7 @@ def compute_profile(track: TrackIndex, essentia: EssentiaOutput) -> TrackProfile
 
     return TrackProfile(
         track_id=track.track_id,
+        duration=track.duration,
         camelot=camelot,
         bpm=bpm,
         energy=energy,

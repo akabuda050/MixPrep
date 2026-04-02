@@ -193,6 +193,7 @@ Each file is plain JSON — open and inspect at any stage.
 ```json
 {
   "track_id": "2abc...",
+  "duration": 412.5,
   "camelot": "11A",
   "bpm": 132.0,
   "energy": 0.74,
@@ -209,7 +210,7 @@ Each file is plain JSON — open and inspect at any stage.
   "peak_score": 0.87,
   "reset_score": 0.41,
   "winddown_score": 0.28,
-  "genres": [{"label": "Techno", "score": 0.82, "sources": ["maest", "effnet"]}]
+  "genres": [{"label": "techno", "score": 0.82}, {"label": "electronic disco", "score": 0.39}]
 }
 ```
 

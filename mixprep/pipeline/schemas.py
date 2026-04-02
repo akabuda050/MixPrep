@@ -72,6 +72,7 @@ class TrackIndex(BaseModel):
     @classmethod
     def file_path_absolute(cls, v: str) -> str:
         from pathlib import Path
+
         if not v.strip():
             raise ValueError("file_path must not be empty")
         if not Path(v).is_absolute():
@@ -168,11 +169,10 @@ class EssentiaOutput(BaseModel):
 
 
 class GenreLabel(BaseModel):
-    """A merged genre label with provenance."""
+    """A merged genre label with normalized label and averaged score."""
 
     label: str
     score: float  # [0–1]
-    sources: list[str]  # e.g. ["maest", "effnet", "jamendo"]
 
 
 class TrackProfile(BaseModel):
@@ -186,6 +186,7 @@ class TrackProfile(BaseModel):
     """
 
     track_id: str
+    duration: Optional[float] = None  # seconds; from track index
     camelot: Optional[str] = None  # e.g. "8A"; null if key absent or unparseable
     bpm: Optional[float] = None  # raw BPM; null if tag absent
     energy: Optional[float] = None  # 0.6 * arousal + 0.4 * danceability

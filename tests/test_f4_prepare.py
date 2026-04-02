@@ -50,13 +50,13 @@ def test_track_profile_all_fields():
         peak_score=0.9,
         reset_score=0.4,
         winddown_score=0.2,
-        genres=[GenreLabel(label="Techno", score=0.8, sources=["maest"])],
+        genres=[GenreLabel(label="techno", score=0.8)],
     )
     assert p.camelot == "8A"
     assert p.bpm == 128.0
     assert p.energy == 0.7
     assert len(p.genres) == 1
-    assert p.genres[0].label == "Techno"
+    assert p.genres[0].label == "techno"
 
 
 def test_track_profile_rejects_empty_track_id():
@@ -71,10 +71,9 @@ def test_track_profile_rejects_empty_track_id():
 def test_genre_label_valid():
     from mixprep.pipeline.schemas import GenreLabel
 
-    g = GenreLabel(label="House", score=0.75, sources=["maest", "effnet"])
-    assert g.label == "House"
+    g = GenreLabel(label="house", score=0.75)
+    assert g.label == "house"
     assert g.score == 0.75
-    assert g.sources == ["maest", "effnet"]
 
 
 # ---------------------------------------------------------------------------
@@ -149,25 +148,40 @@ def test_camelot_from_essentia_major():
 # ---------------------------------------------------------------------------
 
 
-def test_merge_genres_dedup_and_average():
+def test_merge_genres_sum_and_cap():
+    """Duplicate labels are merged with sum(scores) capped at 1.0."""
     from mixprep.pipeline.profile import merge_genres
     from mixprep.pipeline.schemas import EssentiaRaw
 
     raw = EssentiaRaw(
         discogs_effnet_embedding=None,
         msd_musicnn_embedding=None,
-        discogs_effnet_activations={"Techno": 0.8, "House": 0.5},
-        maest_activations={"Techno": 0.6, "Ambient": 0.3},
+        discogs_effnet_activations={"Techno": 0.8},
+        maest_activations={"Techno": 0.6},
         jamendo_genre_activations=None,
     )
     result = merge_genres(raw)
-    labels = [g.label for g in result]
-    assert "Techno" in labels
+    techno = next(g for g in result if g.label == "techno")
+    # sum: 0.8 + 0.6 = 1.4, capped at 1.0
+    assert techno.score == 1.0
 
-    techno = next(g for g in result if g.label.lower() == "techno")
-    # averaged: (0.8 + 0.6) / 2 = 0.7
-    assert abs(techno.score - 0.7) < 1e-4
-    assert set(techno.sources) == {"effnet", "maest"}
+
+def test_merge_genres_sum_no_cap():
+    """Scores below 1.0 are summed without capping."""
+    from mixprep.pipeline.profile import merge_genres
+    from mixprep.pipeline.schemas import EssentiaRaw
+
+    raw = EssentiaRaw(
+        discogs_effnet_embedding=None,
+        msd_musicnn_embedding=None,
+        discogs_effnet_activations={"House": 0.3},
+        maest_activations={"House": 0.4},
+        jamendo_genre_activations=None,
+    )
+    result = merge_genres(raw)
+    house = next(g for g in result if g.label == "house")
+    # sum: 0.3 + 0.4 = 0.7
+    assert abs(house.score - 0.7) < 1e-4
 
 
 def test_merge_genres_sorted_descending():
@@ -187,37 +201,104 @@ def test_merge_genres_sorted_descending():
 
 
 def test_merge_genres_top_n():
-    from mixprep.pipeline.profile import merge_genres
+    """top_n limits output; per-source top-5 pre-filter applies before merge."""
+    from mixprep.pipeline.profile import _SOURCE_TOP_N, merge_genres
     from mixprep.pipeline.schemas import EssentiaRaw
 
-    activations = {f"Genre{i}": float(i) / 100 for i in range(30)}
+    # 3 sources × _SOURCE_TOP_N unique labels each = up to 3*_SOURCE_TOP_N candidates
+    effnet = {f"effnet{i}": float(i + 1) / 10 for i in range(10)}
+    maest = {f"maest{i}": float(i + 1) / 10 for i in range(10)}
+    jamendo = {f"jamendo{i}": float(i + 1) / 10 for i in range(10)}
     raw = EssentiaRaw(
         discogs_effnet_embedding=None,
         msd_musicnn_embedding=None,
-        discogs_effnet_activations=activations,
+        discogs_effnet_activations=effnet,
+        maest_activations=maest,
+        jamendo_genre_activations=jamendo,
+    )
+    result = merge_genres(raw, top_n=3)
+    assert len(result) == 3
+    # per-source filter: only top _SOURCE_TOP_N from each → max 3*_SOURCE_TOP_N candidates total
+    result_all = merge_genres(raw, top_n=100)
+    assert len(result_all) <= 3 * _SOURCE_TOP_N
+
+
+def test_merge_genres_split_compound():
+    """Compound labels split on --- and / into separate atoms."""
+    from mixprep.pipeline.profile import merge_genres
+    from mixprep.pipeline.schemas import EssentiaRaw
+
+    raw = EssentiaRaw(
+        discogs_effnet_embedding=None,
+        msd_musicnn_embedding=None,
+        discogs_effnet_activations={"Electronic---House": 0.7, "Funk / Soul": 0.5},
         maest_activations=None,
         jamendo_genre_activations=None,
     )
-    result = merge_genres(raw, top_n=10)
-    assert len(result) == 10
+    result = merge_genres(raw)
+    labels = {g.label for g in result}
+    assert "electronic" in labels
+    assert "house" in labels
+    assert "funk" in labels
+    assert "soul" in labels
 
 
-def test_merge_genres_label_normalization():
-    """dash-separated labels should deduplicate with space-separated."""
+def test_merge_genres_drop_weak_parent():
+    """Parent label is dropped when a child with score >= parent exists."""
     from mixprep.pipeline.profile import merge_genres
     from mixprep.pipeline.schemas import EssentiaRaw
 
     raw = EssentiaRaw(
         discogs_effnet_embedding=None,
         msd_musicnn_embedding=None,
-        discogs_effnet_activations={"deep-house": 0.7},
-        maest_activations={"deep house": 0.5},
+        discogs_effnet_activations={"electronic": 0.45, "electronic house": 0.78},
+        maest_activations=None,
         jamendo_genre_activations=None,
     )
     result = merge_genres(raw)
-    # Should be deduplicated into one entry
-    assert len(result) == 1
-    assert abs(result[0].score - 0.6) < 1e-4
+    labels = {g.label for g in result}
+    assert "electronic house" in labels
+    assert "electronic" not in labels
+
+
+def test_merge_genres_keep_parent_when_stronger():
+    """Parent is kept when its score > child score."""
+    from mixprep.pipeline.profile import merge_genres
+    from mixprep.pipeline.schemas import EssentiaRaw
+
+    raw = EssentiaRaw(
+        discogs_effnet_embedding=None,
+        msd_musicnn_embedding=None,
+        discogs_effnet_activations={"electronic": 0.9, "electronic house": 0.4},
+        maest_activations=None,
+        jamendo_genre_activations=None,
+    )
+    result = merge_genres(raw)
+    labels = {g.label for g in result}
+    assert "electronic" in labels
+    assert "electronic house" in labels
+
+
+def test_merge_genres_label_normalization():
+    """Compound labels split and then merged when atoms are identical."""
+    from mixprep.pipeline.profile import merge_genres
+    from mixprep.pipeline.schemas import EssentiaRaw
+
+    raw = EssentiaRaw(
+        discogs_effnet_embedding=None,
+        msd_musicnn_embedding=None,
+        discogs_effnet_activations={"Electronic---House": 0.7},
+        maest_activations={"electronic house": 0.5},
+        jamendo_genre_activations=None,
+    )
+    result = merge_genres(raw)
+    # "Electronic---House" splits to "electronic" + "house" (0.7 each)
+    # "electronic house" stays as-is (0.5)
+    # child score 0.5 < parent score 0.7 → parent survives
+    labels = {g.label for g in result}
+    assert "electronic" in labels
+    assert "house" in labels
+    assert "electronic house" in labels
 
 
 def test_merge_genres_empty_sources():
