@@ -2,9 +2,7 @@
 F3 CLI — run_analyze essentia command tests.
 
 Covers:
-- Corrupt scan.json exits with code 1
-- Essentia stage: tracks missing metadata are skipped
-- Essentia stage: all tracks missing metadata → no eligible tracks, returns early
+- Missing tracks dir exits with code 1
 - Essentia stage: writes essentia/<track_id>.json
 - Essentia stage: essentia_failed tracks counted in failed total
 - Essentia stage: model load failure exits with code 1
@@ -22,42 +20,33 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 
+_LIBRARY = "test_lib"
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
 
-def _track_dict(track_id: str, file_path: str = "/music/track.mp3") -> dict:
-    return {
+def _lib_dir(data_dir: Path) -> Path:
+    return data_dir / "libraries" / _LIBRARY
+
+
+def _write_track(data_dir: Path, track_id: str, file_path: str = "/music/track.mp3") -> None:
+    tracks_dir = _lib_dir(data_dir) / "tracks"
+    tracks_dir.mkdir(parents=True, exist_ok=True)
+    entry = {
         "track_id": track_id,
         "file_path": file_path,
-        "file_hash": "abc123",
         "duration": 300.0,
         "format": "mp3",
         "sample_rate": 44100,
+        "bpm": None,
+        "key": None,
+        "title": None,
+        "artist": None,
+        "album": None,
     }
-
-
-def _write_scan(data_dir: Path, tracks: list[dict]) -> None:
-    (data_dir / "scan.json").write_text(json.dumps(tracks), encoding="utf-8")
-
-
-def _write_metadata(data_dir: Path, track_id: str) -> None:
-    meta_dir = data_dir / "metadata"
-    meta_dir.mkdir(exist_ok=True)
-    (meta_dir / f"{track_id}.json").write_text(
-        json.dumps(
-            {
-                "track_id": track_id,
-                "bpm": None,
-                "key": None,
-                "title": None,
-                "artist": None,
-                "album": None,
-            }
-        ),
-        encoding="utf-8",
-    )
+    (tracks_dir / f"{track_id}.json").write_text(json.dumps(entry), encoding="utf-8")
 
 
 def _make_fake_essentia_output(track_id: str, failed: bool = False):
@@ -96,34 +85,16 @@ def _make_fake_essentia_output(track_id: str, failed: bool = False):
 # ---------------------------------------------------------------------------
 
 
-def test_run_analyze_exits_1_on_corrupt_scan(tmp_path, monkeypatch):
+def test_run_analyze_exits_1_on_missing_tracks_dir(tmp_path, monkeypatch):
     from mixprep.cli.commands.analyze import run_analyze
 
     data_dir = tmp_path / "data"
-    data_dir.mkdir()
     monkeypatch.setenv("MIXPREP_DATA_DIR", str(data_dir))
-    (data_dir / "scan.json").write_text("not valid json", encoding="utf-8")
 
     with pytest.raises(SystemExit) as exc:
-        run_analyze("essentia")
+        run_analyze("essentia", _LIBRARY)
 
     assert exc.value.code == 1
-
-
-def test_run_analyze_essentia_skips_missing_metadata(tmp_path, monkeypatch):
-    from mixprep.cli.commands.analyze import run_analyze
-
-    data_dir = tmp_path / "data"
-    data_dir.mkdir()
-    monkeypatch.setenv("MIXPREP_DATA_DIR", str(data_dir))
-
-    # Track with no metadata artifact
-    _write_scan(data_dir, [_track_dict("tid1")])
-    # Do NOT write metadata for tid1
-
-    run_analyze("essentia")  # should not raise — skips and returns early
-
-    assert not (data_dir / "essentia" / "tid1.json").exists()
 
 
 def test_run_analyze_essentia_writes_artifact(tmp_path, monkeypatch):
@@ -131,11 +102,8 @@ def test_run_analyze_essentia_writes_artifact(tmp_path, monkeypatch):
     from mixprep.cli.commands.analyze import run_analyze
 
     data_dir = tmp_path / "data"
-    data_dir.mkdir()
     monkeypatch.setenv("MIXPREP_DATA_DIR", str(data_dir))
-
-    _write_scan(data_dir, [_track_dict("tid1")])
-    _write_metadata(data_dir, "tid1")
+    _write_track(data_dir, "tid1")
 
     fake_output = _make_fake_essentia_output("tid1")
 
@@ -143,9 +111,9 @@ def test_run_analyze_essentia_writes_artifact(tmp_path, monkeypatch):
         patch.object(er, "load_models"),
         patch.object(er, "run_essentia", return_value=fake_output),
     ):
-        run_analyze("essentia")
+        run_analyze("essentia", _LIBRARY)
 
-    dest = data_dir / "essentia" / "tid1.json"
+    dest = _lib_dir(data_dir) / "essentia" / "tid1.json"
     assert dest.exists()
     data = json.loads(dest.read_text())
     assert data["track_id"] == "tid1"
@@ -157,11 +125,8 @@ def test_run_analyze_essentia_counts_failed_tracks(tmp_path, monkeypatch):
     from mixprep.cli.commands.analyze import console, run_analyze
 
     data_dir = tmp_path / "data"
-    data_dir.mkdir()
     monkeypatch.setenv("MIXPREP_DATA_DIR", str(data_dir))
-
-    _write_scan(data_dir, [_track_dict("tid1")])
-    _write_metadata(data_dir, "tid1")
+    _write_track(data_dir, "tid1")
 
     failed_output = _make_fake_essentia_output("tid1", failed=True)
     printed = []
@@ -171,9 +136,8 @@ def test_run_analyze_essentia_counts_failed_tracks(tmp_path, monkeypatch):
         patch.object(er, "run_essentia", return_value=failed_output),
         patch.object(console, "print", side_effect=lambda *a, **k: printed.append(str(a))),
     ):
-        run_analyze("essentia")
+        run_analyze("essentia", _LIBRARY)
 
-    # Failed count was reported
     assert any("1" in m and "failed" in m for m in printed)
 
 
@@ -182,17 +146,14 @@ def test_run_analyze_essentia_model_load_failure_exits_1(tmp_path, monkeypatch):
     from mixprep.cli.commands.analyze import run_analyze
 
     data_dir = tmp_path / "data"
-    data_dir.mkdir()
     monkeypatch.setenv("MIXPREP_DATA_DIR", str(data_dir))
-
-    _write_scan(data_dir, [_track_dict("tid1")])
-    _write_metadata(data_dir, "tid1")
+    _write_track(data_dir, "tid1")
 
     with (
         patch.object(er, "load_models", side_effect=Exception("model files missing")),
         pytest.raises(SystemExit) as exc,
     ):
-        run_analyze("essentia")
+        run_analyze("essentia", _LIBRARY)
 
     assert exc.value.code == 1
 
@@ -202,18 +163,15 @@ def test_run_analyze_essentia_interrupt_exits_130(tmp_path, monkeypatch):
     from mixprep.cli.commands.analyze import run_analyze
 
     data_dir = tmp_path / "data"
-    data_dir.mkdir()
     monkeypatch.setenv("MIXPREP_DATA_DIR", str(data_dir))
-
-    _write_scan(data_dir, [_track_dict("tid1")])
-    _write_metadata(data_dir, "tid1")
+    _write_track(data_dir, "tid1")
 
     with (
         patch.object(er, "load_models"),
         patch.object(er, "run_essentia", side_effect=KeyboardInterrupt),
         pytest.raises(SystemExit) as exc,
     ):
-        run_analyze("essentia")
+        run_analyze("essentia", _LIBRARY)
 
     assert exc.value.code == 130
 
@@ -223,11 +181,8 @@ def test_run_analyze_essentia_idempotent(tmp_path, monkeypatch):
     from mixprep.cli.commands.analyze import run_analyze
 
     data_dir = tmp_path / "data"
-    data_dir.mkdir()
     monkeypatch.setenv("MIXPREP_DATA_DIR", str(data_dir))
-
-    _write_scan(data_dir, [_track_dict("tid1")])
-    _write_metadata(data_dir, "tid1")
+    _write_track(data_dir, "tid1")
 
     fake_output = _make_fake_essentia_output("tid1")
 
@@ -235,15 +190,15 @@ def test_run_analyze_essentia_idempotent(tmp_path, monkeypatch):
         patch.object(er, "load_models"),
         patch.object(er, "run_essentia", return_value=fake_output),
     ):
-        run_analyze("essentia")
-    first = (data_dir / "essentia" / "tid1.json").read_text()
+        run_analyze("essentia", _LIBRARY)
+    first = (_lib_dir(data_dir) / "essentia" / "tid1.json").read_text()
 
     with (
         patch.object(er, "load_models"),
         patch.object(er, "run_essentia", return_value=fake_output),
     ):
-        run_analyze("essentia")
-    second = (data_dir / "essentia" / "tid1.json").read_text()
+        run_analyze("essentia", _LIBRARY)
+    second = (_lib_dir(data_dir) / "essentia" / "tid1.json").read_text()
 
     assert first == second
 
@@ -252,13 +207,12 @@ def test_run_analyze_classify_not_implemented(tmp_path, monkeypatch):
     from mixprep.cli.commands.analyze import console, run_analyze
 
     data_dir = tmp_path / "data"
-    data_dir.mkdir()
     monkeypatch.setenv("MIXPREP_DATA_DIR", str(data_dir))
-    _write_scan(data_dir, [_track_dict("tid1")])
+    _write_track(data_dir, "tid1")
 
     printed = []
     with patch.object(console, "print", side_effect=lambda *a, **k: printed.append(str(a))):
-        run_analyze("classify")
+        run_analyze("classify", _LIBRARY)
 
     assert any("not yet implemented" in m for m in printed)
 
@@ -271,11 +225,8 @@ def test_run_analyze_essentia_time_curves_warning(tmp_path, monkeypatch, caplog)
     from mixprep.cli.commands.analyze import run_analyze
 
     data_dir = tmp_path / "data"
-    data_dir.mkdir()
     monkeypatch.setenv("MIXPREP_DATA_DIR", str(data_dir))
-
-    _write_scan(data_dir, [_track_dict("tid1", file_path=str(tmp_path / "track.mp3"))])
-    _write_metadata(data_dir, "tid1")
+    _write_track(data_dir, "tid1", file_path=str(tmp_path / "track.mp3"))
 
     fake_audio = np.zeros(16000, dtype=np.float32)
     loader_instance = MagicMock(return_value=fake_audio)
@@ -314,9 +265,9 @@ def test_run_analyze_essentia_time_curves_warning(tmp_path, monkeypatch, caplog)
         ),
         caplog.at_level(logging.WARNING, logger="mixprep.pipeline.essentia_runner"),
     ):
-        run_analyze("essentia")
+        run_analyze("essentia", _LIBRARY)
 
-    dest = data_dir / "essentia" / "tid1.json"
+    dest = _lib_dir(data_dir) / "essentia" / "tid1.json"
     assert dest.exists()
     data = json.loads(dest.read_text())
     assert data["time_curves"] is None

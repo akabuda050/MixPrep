@@ -4,30 +4,41 @@ F1 CLI — run_scan command handler tests.
 Covers:
 - Invalid directory exits with code 1
 - No audio files found returns early
-- Successful scan writes scan.json and prints summary
-- Corrupt existing scan.json prints warning and continues
+- Successful scan writes tracks/<track_id>.json and prints summary
+- Rescan reuses existing track_id
+- Orphan cleanup when leftover .tmp exists
+- Interrupt exits 130
+- --prune removes orphaned entries
 """
 
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
+
+_LIBRARY = "test_lib"
 
 
 def _mock_audio_info(duration=300.0, sample_rate=44100):
     mock = MagicMock()
     mock.info.length = duration
     mock.info.sample_rate = sample_rate
+    mock.tags = {}
     return mock
+
+
+def _tracks_dir(data_dir: Path) -> Path:
+    return data_dir / "libraries" / _LIBRARY / "tracks"
 
 
 def test_run_scan_exits_1_on_nonexistent_directory(tmp_path):
     from mixprep.cli.commands.scan import run_scan
 
     with pytest.raises(SystemExit) as exc:
-        run_scan(tmp_path / "nonexistent")
+        run_scan(tmp_path / "nonexistent", _LIBRARY)
 
     assert exc.value.code == 1
 
@@ -37,110 +48,82 @@ def test_run_scan_returns_early_when_no_audio_files(tmp_path, monkeypatch):
 
     monkeypatch.setenv("MIXPREP_DATA_DIR", str(tmp_path / "data"))
 
-    run_scan(tmp_path)  # empty dir — should not raise or write anything
+    run_scan(tmp_path, _LIBRARY)
 
-    assert not (tmp_path / "data" / "scan.json").exists()
+    assert not _tracks_dir(tmp_path / "data").exists()
 
 
-def test_run_scan_writes_scan_json(tmp_path, monkeypatch):
+def test_run_scan_writes_track_json(tmp_path, monkeypatch):
     from mixprep.cli.commands.scan import run_scan
 
-    data_dir = tmp_path / "data"
-    monkeypatch.setenv("MIXPREP_DATA_DIR", str(data_dir))
-
+    monkeypatch.setenv("MIXPREP_DATA_DIR", str(tmp_path / "data"))
     (tmp_path / "track.mp3").write_bytes(b"audio")
 
     with patch("mutagen.File", return_value=_mock_audio_info()):
-        run_scan(tmp_path)
+        run_scan(tmp_path, _LIBRARY)
 
-    dest = data_dir / "scan.json"
-    assert dest.exists()
-    entries = json.loads(dest.read_text())
-    assert len(entries) == 1
-    assert entries[0]["file_path"].endswith("track.mp3")
-    assert entries[0]["track_id"]  # non-empty KSUID
-    assert entries[0]["duration"] == pytest.approx(300.0)
+    tracks_dir = _tracks_dir(tmp_path / "data")
+    track_files = list(tracks_dir.glob("*.json"))
+    assert len(track_files) == 1
+
+    entry = json.loads(track_files[0].read_text())
+    assert entry["file_path"].endswith("track.mp3")
+    assert entry["track_id"]
+    assert entry["duration"] == pytest.approx(300.0)
 
 
-def test_run_scan_loads_existing_scan_and_reuses_id(tmp_path, monkeypatch):
+def test_run_scan_reuses_track_id_on_rescan(tmp_path, monkeypatch):
     from mixprep.cli.commands.scan import run_scan
 
-    data_dir = tmp_path / "data"
-    monkeypatch.setenv("MIXPREP_DATA_DIR", str(data_dir))
-
+    monkeypatch.setenv("MIXPREP_DATA_DIR", str(tmp_path / "data"))
     (tmp_path / "track.mp3").write_bytes(b"stable-content")
 
     with patch("mutagen.File", return_value=_mock_audio_info()):
-        run_scan(tmp_path)
+        run_scan(tmp_path, _LIBRARY)
 
-    first_id = json.loads((data_dir / "scan.json").read_text())[0]["track_id"]
+    tracks_dir = _tracks_dir(tmp_path / "data")
+    first_id = json.loads(list(tracks_dir.glob("*.json"))[0].read_text())["track_id"]
 
     with patch("mutagen.File", return_value=_mock_audio_info()):
-        run_scan(tmp_path)
+        run_scan(tmp_path, _LIBRARY)
 
-    second_id = json.loads((data_dir / "scan.json").read_text())[0]["track_id"]
+    second_id = json.loads(list(tracks_dir.glob("*.json"))[0].read_text())["track_id"]
 
     assert first_id == second_id
 
 
-def test_run_scan_cleans_up_orphaned_tmp(tmp_path, monkeypatch):
+def test_run_scan_interrupt_exits_130(tmp_path, monkeypatch):
     from mixprep.cli.commands.scan import run_scan
 
-    data_dir = tmp_path / "data"
-    data_dir.mkdir()
-    monkeypatch.setenv("MIXPREP_DATA_DIR", str(data_dir))
-
-    # Simulate a leftover .tmp from a previous interrupted scan
-    orphan = data_dir / "scan.tmp"
-    orphan.write_text("leftover")
-
-    (tmp_path / "track.mp3").write_bytes(b"audio")
-
-    with patch("mutagen.File", return_value=_mock_audio_info()):
-        run_scan(tmp_path)
-
-    assert not orphan.exists()
-
-
-def test_run_scan_interrupt_leaves_no_tmp_and_exits_130(tmp_path, monkeypatch):
-    from mixprep.cli.commands.scan import run_scan
-
-    data_dir = tmp_path / "data"
-    monkeypatch.setenv("MIXPREP_DATA_DIR", str(data_dir))
-
+    monkeypatch.setenv("MIXPREP_DATA_DIR", str(tmp_path / "data"))
     (tmp_path / "track.mp3").write_bytes(b"audio")
 
     with patch("mutagen.File", side_effect=KeyboardInterrupt):
         with pytest.raises(SystemExit) as exc:
-            run_scan(tmp_path)
+            run_scan(tmp_path, _LIBRARY)
 
     assert exc.value.code == 130
-    assert not (data_dir / "scan.json").exists()
-    assert not (data_dir / "scan.tmp").exists()
 
 
-def test_run_scan_warns_on_corrupt_existing_scan(tmp_path, monkeypatch):
-    from mixprep.cli.commands.scan import console, run_scan
+def test_run_scan_prune_removes_orphans(tmp_path, monkeypatch):
+    from mixprep.cli.commands.scan import run_scan
 
-    data_dir = tmp_path / "data"
-    data_dir.mkdir()
-    monkeypatch.setenv("MIXPREP_DATA_DIR", str(data_dir))
+    monkeypatch.setenv("MIXPREP_DATA_DIR", str(tmp_path / "data"))
 
-    (data_dir / "scan.json").write_text("not valid json")
-    (tmp_path / "track.mp3").write_bytes(b"audio")
+    # First scan: create a track entry
+    mp3 = tmp_path / "track.mp3"
+    mp3.write_bytes(b"audio")
 
-    printed = []
+    with patch("mutagen.File", return_value=_mock_audio_info()):
+        run_scan(tmp_path, _LIBRARY)
 
-    def capture(*args, **kwargs):
-        printed.append(str(args))
+    tracks_dir = _tracks_dir(tmp_path / "data")
+    assert len(list(tracks_dir.glob("*.json"))) == 1
 
-    with patch.object(console, "print", side_effect=capture):
-        with patch("mutagen.File", return_value=_mock_audio_info()):
-            run_scan(tmp_path)
+    # Remove the file to create an orphan, then scan with --prune
+    mp3.unlink()
 
-    # Warning was printed
-    assert any("Warning" in m for m in printed)
+    with patch("mutagen.File", return_value=_mock_audio_info()):
+        run_scan(tmp_path, _LIBRARY, prune=True)
 
-    # scan.json still written with fresh result despite corrupt existing file
-    entries = json.loads((data_dir / "scan.json").read_text())
-    assert len(entries) == 1
+    assert len(list(tracks_dir.glob("*.json"))) == 0

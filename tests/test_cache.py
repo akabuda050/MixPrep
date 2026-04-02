@@ -44,31 +44,33 @@ class TestModelPath:
 class TestDataDir:
     def test_env_var_takes_priority(self, tmp_path: Path):
         with patch.dict(os.environ, {"MIXPREP_DATA_DIR": str(tmp_path)}):
-            assert data_dir() == tmp_path
+            assert data_dir("mylib") == tmp_path / "libraries" / "mylib"
 
     def test_xdg_data_home_used_when_no_env(self, tmp_path: Path):
         env = {k: v for k, v in os.environ.items() if k != "MIXPREP_DATA_DIR"}
         env["XDG_DATA_HOME"] = str(tmp_path)
         with patch.dict(os.environ, env, clear=True):
-            result = data_dir()
-        assert result == tmp_path / "mixprep" / "data"
+            result = data_dir("mylib")
+        assert result == tmp_path / "mixprep" / "data" / "libraries" / "mylib"
 
     def test_xdg_fallback_to_home(self):
         env = {
             k: v for k, v in os.environ.items() if k not in ("MIXPREP_DATA_DIR", "XDG_DATA_HOME")
         }
         with patch.dict(os.environ, env, clear=True):
-            result = data_dir()
-        assert result == Path.home() / ".local" / "share" / "mixprep" / "data"
+            result = data_dir("mylib")
+        assert (
+            result == Path.home() / ".local" / "share" / "mixprep" / "data" / "libraries" / "mylib"
+        )
 
 
 class TestEnsureDataDir:
     def test_creates_directory(self, tmp_path: Path):
         target = tmp_path / "nested" / "data"
         with patch.dict(os.environ, {"MIXPREP_DATA_DIR": str(target)}):
-            result = ensure_data_dir()
-        assert target.exists()
-        assert result == target
+            result = ensure_data_dir("mylib")
+        assert (target / "libraries" / "mylib").exists()
+        assert result == target / "libraries" / "mylib"
 
 
 class TestEnsureModelsDir:

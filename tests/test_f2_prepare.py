@@ -1,11 +1,10 @@
 """
-F2 Prepare — contract tests for ingest stage.
+F2 Prepare — contract tests for tag extraction.
 
-Covers:
+Tag extraction is now part of scan stage. These tests verify:
 - mutagen importable
 - TaggedValue schema: valid data, rejects bad source/confidence
-- TrackMetadata schema: valid data, null fields allowed, rejects empty track_id
-- source is always "file_tag", confidence always 1.0
+- TrackIndex accepts tag fields, allows null tags
 """
 
 from __future__ import annotations
@@ -67,70 +66,42 @@ def test_tagged_value_rejects_confidence_below_0():
         TaggedValue(value=138.0, source="file_tag", confidence=-0.1)
 
 
-def test_track_metadata_valid():
-    from mixprep.pipeline.schemas import TaggedValue, TrackMetadata
+def test_track_index_with_tag_fields():
+    from mixprep.pipeline.schemas import TaggedValue, TrackIndex
 
-    meta = TrackMetadata(
+    t = TrackIndex(
         track_id="abc123",
+        file_path="/music/track.mp3",
         bpm=TaggedValue(value=138.0, source="file_tag", confidence=1.0),
         key=TaggedValue(value="Am", source="file_tag", confidence=1.0),
         title="Track Title",
         artist="Artist Name",
         album="Album",
     )
-    assert meta.track_id == "abc123"
-    assert meta.bpm is not None
-    assert meta.bpm.value == 138.0
-    assert meta.key is not None
-    assert meta.key.value == "Am"
+    assert t.bpm is not None and t.bpm.value == 138.0
+    assert t.key is not None and t.key.value == "Am"
+    assert t.title == "Track Title"
 
 
-def test_track_metadata_all_null_tags():
-    from mixprep.pipeline.schemas import TrackMetadata
+def test_track_index_null_tag_fields():
+    from mixprep.pipeline.schemas import TrackIndex
 
-    meta = TrackMetadata(
-        track_id="abc123",
-        bpm=None,
-        key=None,
-        title=None,
-        artist=None,
-        album=None,
-    )
-    assert meta.bpm is None
-    assert meta.key is None
-    assert meta.title is None
-    assert meta.artist is None
-    assert meta.album is None
+    t = TrackIndex(track_id="abc123", file_path="/music/track.mp3")
+    assert t.bpm is None
+    assert t.key is None
+    assert t.title is None
+    assert t.artist is None
+    assert t.album is None
 
 
-def test_track_metadata_rejects_empty_track_id():
-    from pydantic import ValidationError
+def test_track_index_serializes_tag_fields():
+    from mixprep.pipeline.schemas import TaggedValue, TrackIndex
 
-    from mixprep.pipeline.schemas import TrackMetadata
-
-    with pytest.raises(ValidationError):
-        TrackMetadata(
-            track_id="",
-            bpm=None,
-            key=None,
-            title=None,
-            artist=None,
-            album=None,
-        )
-
-
-def test_track_metadata_serializes_to_dict():
-    from mixprep.pipeline.schemas import TaggedValue, TrackMetadata
-
-    meta = TrackMetadata(
+    t = TrackIndex(
         track_id="x1",
+        file_path="/music/track.mp3",
         bpm=TaggedValue(value=140.0, source="file_tag", confidence=1.0),
-        key=None,
-        title="T",
-        artist=None,
-        album=None,
     )
-    d = meta.model_dump()
-    assert d["track_id"] == "x1"
+    d = t.model_dump()
     assert d["bpm"]["value"] == 140.0
     assert d["key"] is None
