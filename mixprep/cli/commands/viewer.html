@@ -114,18 +114,18 @@ body{background:var(--bg);color:var(--text);font:13px/1.5 'Inter',system-ui,sans
 #mixer{
   display:flex;align-items:stretch;
   background:var(--s1);border-top:1px solid var(--b1);
-  height:130px;min-height:130px;flex-shrink:0;
+  min-height:110px;flex-shrink:0;
 }
 .deck{
   flex:1;display:flex;flex-direction:column;justify-content:center;
-  padding:8px 14px;gap:5px;min-width:0;overflow:hidden;
+  padding:8px 12px;gap:5px;min-width:0;overflow:hidden;
 }
 .deck-top{display:flex;align-items:center;gap:8px;min-width:0}
 .deck-top .deck-artist{font-size:10px;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.deck-bottom{display:flex;align-items:center;gap:0;min-width:0}
+.deck-bottom{display:flex;align-items:flex-start;gap:0;min-width:0}
 .deck-a .deck-bottom{flex-direction:row}
 .deck-b .deck-bottom{flex-direction:row-reverse}
-.deck-bottom .deck-controls{flex:1;min-width:0;display:flex;align-items:center;gap:8px}
+.deck-bottom .deck-controls{flex:1;min-width:0;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .deck-bottom .deck-eq{flex-shrink:0;border-left:1px solid var(--b1);padding-left:12px;margin-left:8px}
 .deck-b .deck-bottom .deck-eq{border-left:none;border-right:1px solid var(--b1);padding-left:0;padding-right:12px;margin-left:0;margin-right:8px}
 /* EQ knobs */
@@ -396,6 +396,7 @@ body{background:var(--bg);color:var(--text);font:13px/1.5 'Inter',system-ui,sans
   align-items:center;gap:5px;letter-spacing:.03em;flex-shrink:0;
 }
 #back-btn::before{content:'←';font-size:14px}
+
 
 @media(max-width:640px){
   body{height:100dvh;height:100vh;overflow:hidden}
@@ -1131,8 +1132,34 @@ function syncDeck(id) {
   const d = decks[id];
   const other = decks[otherId];
   if (!d.audio || !d.bpm || !other.bpm) return;
+
+  // 1. Match BPM
   const targetBpm = other.bpm * (other.audio ? other.audio.playbackRate : 1);
   d.audio.playbackRate = targetBpm / d.bpm;
+
+  // 2. Beat-align phase: nudge currentTime so beats land together
+  //    Beat period of master (in master's media time, accounting for playbackRate)
+  if (other.audio && !other.audio.paused) {
+    const masterBpm  = targetBpm;
+    const masterPeriod = 60 / masterBpm; // seconds per beat in real time
+    // Where is master in its beat cycle (real-time seconds elapsed since last beat)
+    const masterPhase = (other.audio.currentTime / (other.audio.playbackRate > 0 ? other.audio.playbackRate : 1)) % masterPeriod;
+    // Beat period in slave's media time
+    const slavePeriod = 60 / d.bpm; // before playbackRate — media time per beat
+    // Current phase of slave in media time
+    const slavePhase  = d.audio.currentTime % slavePeriod;
+    // Desired slave media-time phase = masterPhase (same fraction of beat)
+    const desiredPhase = masterPhase * (d.bpm / masterBpm) * d.audio.playbackRate;
+    // Nudge: difference between desired and current phase, rounded to nearest beat
+    const phaseDiff = desiredPhase - slavePhase;
+    // Keep nudge within ±half a beat to pick shortest path
+    const nudge = phaseDiff - Math.round(phaseDiff / slavePeriod) * slavePeriod;
+    const newTime = d.audio.currentTime + nudge;
+    if (newTime >= 0 && newTime <= d.audio.duration) {
+      d.audio.currentTime = newTime;
+    }
+  }
+
   const tempoEl = document.getElementById(`deck-${id}-tempo`);
   if (tempoEl) tempoEl.value = d.audio.playbackRate;
   updateBpmDisplay(id);
