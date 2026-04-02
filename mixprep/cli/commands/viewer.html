@@ -22,7 +22,7 @@
   --r:       6px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--text);font:13px/1.5 'Inter',system-ui,sans-serif;height:100vh;overflow:hidden;display:flex;flex-direction:column}
+body{background:var(--bg);color:var(--text);font:13px/1.5 'Inter',system-ui,sans-serif;height:100vh;height:100dvh;overflow:hidden;display:flex;flex-direction:column}
 
 /* ─── topbar ─── */
 #topbar{
@@ -399,7 +399,7 @@ body{background:var(--bg);color:var(--text);font:13px/1.5 'Inter',system-ui,sans
 
 
 @media(max-width:640px){
-  body{height:100dvh;height:100vh;overflow:hidden}
+  body{height:100vh;height:100dvh;overflow:hidden}
 
   /* ── picker ── */
   #picker{flex-direction:column}
@@ -419,24 +419,27 @@ body{background:var(--bg);color:var(--text);font:13px/1.5 'Inter',system-ui,sans
   .score-grid{grid-template-columns:1fr}
   .d-meta{gap:8px}
 
-  /* ── mixer on mobile: two compact rows + xfader ── */
-  #mixer{flex-direction:column;height:auto;flex-shrink:0}
-  .deck{border:none;border-bottom:1px solid var(--b1);padding:5px 10px;gap:2px}
+  /* ── mixer on mobile: fixed compact height ── */
+  #mixer{flex-direction:column;height:auto;max-height:40vh;flex-shrink:0;overflow:hidden}
+  .deck{border:none;border-bottom:1px solid var(--b1);padding:4px 10px;gap:1px;flex:1;justify-content:center;min-height:0}
   .deck-a{border-right:none}
   .deck-b{border-left:none}
+  .deck-bottom{flex-wrap:nowrap}
   /* hide desktop EQ in mixer bar; shown via modal instead */
   .deck-eq{display:none}
   /* add settings gear button (shown only on mobile) */
   .deck-settings-btn{display:flex}
   #xfader-wrap{
     width:100%;flex-direction:row;align-items:center;
-    min-height:40px;gap:10px;padding:6px 14px;
+    height:36px;flex-shrink:0;gap:10px;padding:4px 14px;
     background:var(--s2);border-top:1px solid var(--b1);border-bottom:1px solid var(--b1);
   }
   #xfader-labels{display:none}
   #xfader{flex:1}
   .deck-vol{width:36px}
   .deck-tempo{display:none!important}
+  .deck-title{max-width:none}
+  .deck-artist{max-width:none}
 }
 </style>
 </head>
