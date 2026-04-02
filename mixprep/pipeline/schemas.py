@@ -132,6 +132,14 @@ class EssentiaFlags(BaseModel):
     essentia_failed: bool
 
 
+class DetectedKey(BaseModel):
+    """Key detected from audio via Essentia KeyExtractor."""
+
+    key: str  # e.g. "A"
+    scale: str  # "major" or "minor"
+    strength: float  # [0–1] confidence
+
+
 class EssentiaOutput(BaseModel):
     """Full Essentia stage artifact for one track."""
 
@@ -139,7 +147,59 @@ class EssentiaOutput(BaseModel):
     raw: EssentiaRaw
     scores: EssentiaScores
     time_curves: Optional[TimeCurves]  # null if audio load failed
+    detected_bpm: Optional[float] = None  # from RhythmExtractor2013; null if tag present
+    detected_key: Optional[DetectedKey] = None  # from KeyExtractor; null if tag present
     flags: EssentiaFlags
+
+    @field_validator("track_id")
+    @classmethod
+    def track_id_nonempty(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("track_id must not be empty")
+        return v
+
+
+# ---------------------------------------------------------------------------
+# F4 — Profile
+# ---------------------------------------------------------------------------
+
+
+class GenreLabel(BaseModel):
+    """A merged genre label with provenance."""
+
+    label: str
+    score: float  # [0–1]
+    sources: list[str]  # e.g. ["maest", "effnet", "jamendo"]
+
+
+class TrackProfile(BaseModel):
+    """Unified per-track profile artifact written to profiles/<track_id>.json.
+
+    All float fields are in [0–1] unless noted.
+    arousal is normalized: (raw_arousal - 1) / 8.0
+    bpm is raw BPM value (e.g. 126.4), null if not available.
+    camelot is e.g. "8A", null if key cannot be parsed.
+    genres are informational only — not used in scoring.
+    """
+
+    track_id: str
+    camelot: Optional[str] = None  # e.g. "8A"; null if key absent or unparseable
+    bpm: Optional[float] = None  # raw BPM; null if tag absent
+    energy: Optional[float] = None  # 0.6 * arousal + 0.4 * danceability
+    groove: Optional[float] = None  # 0.5 * danceability + 0.3 * approachability + 0.2 * tonal
+    danceability: Optional[float] = None
+    arousal: Optional[float] = None  # normalized: (raw - 1) / 8.0
+    tonal: Optional[float] = None
+    timbre_bright: Optional[float] = None
+    approachability: Optional[float] = None
+    engagement: Optional[float] = None
+    vocal_probability: Optional[float] = None
+    warmup_score: Optional[float] = None
+    build_score: Optional[float] = None
+    peak_score: Optional[float] = None
+    reset_score: Optional[float] = None
+    winddown_score: Optional[float] = None
+    genres: list[GenreLabel] = []
 
     @field_validator("track_id")
     @classmethod

@@ -203,20 +203,6 @@ def test_run_analyze_essentia_idempotent(tmp_path, monkeypatch):
     assert first == second
 
 
-def test_run_analyze_classify_not_implemented(tmp_path, monkeypatch):
-    from mixprep.cli.commands.analyze import console, run_analyze
-
-    data_dir = tmp_path / "data"
-    monkeypatch.setenv("MIXPREP_DATA_DIR", str(data_dir))
-    _write_track(data_dir, "tid1")
-
-    printed = []
-    with patch.object(console, "print", side_effect=lambda *a, **k: printed.append(str(a))):
-        run_analyze("classify", _LIBRARY)
-
-    assert any("not yet implemented" in m for m in printed)
-
-
 def test_run_analyze_essentia_time_curves_warning(tmp_path, monkeypatch, caplog):
     """time_curves computation failure logs a warning but does not crash."""
     import logging

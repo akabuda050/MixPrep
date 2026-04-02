@@ -48,6 +48,7 @@ from essentia import EssentiaLogger
 
 from mixprep.models.cache import models_dir
 from mixprep.pipeline.schemas import (
+    DetectedKey,
     EssentiaFlags,
     EssentiaOutput,
     EssentiaRaw,
@@ -153,6 +154,11 @@ def load_models() -> None:
         output="model/Identity",
     )
 
+    # ── Audio analysis algorithms (no model files needed) ───────────────────
+    # Instantiated once here so they are reused across tracks.
+    _models["rhythm_extractor"] = es.RhythmExtractor2013(method="multifeature")
+    _models["key_extractor"] = es.KeyExtractor()
+
     _models_loaded = True
     log.info("All Essentia models loaded.")
 
@@ -248,11 +254,35 @@ def run_essentia(track: TrackIndex) -> EssentiaOutput:
     load_models()
 
     # ── Load audio ──────────────────────────────────────────────────────────
+    # 16kHz for ML models; 44100Hz for rhythm/key extraction (needs full range)
+    need_bpm = track.bpm is None
+    need_key = track.key is None
+
     try:
         audio = es.MonoLoader(filename=track.file_path, sampleRate=_SAMPLE_RATE)()
     except Exception as exc:
         log.warning("Audio load failed for %s: %s", track.file_path, exc)
         return _null_output(track.track_id, time_curves=None)
+
+    # ── BPM / Key detection (only when tag missing) ─────────────────────────
+    detected_bpm: float | None = None
+    detected_key: DetectedKey | None = None
+
+    if need_bpm or need_key:
+        try:
+            audio_44k = es.MonoLoader(filename=track.file_path, sampleRate=44100)()
+            if need_bpm:
+                bpm_val, _, _, _, _ = _models["rhythm_extractor"](audio_44k)
+                detected_bpm = float(bpm_val)
+            if need_key:
+                key_str, scale_str, strength_val = _models["key_extractor"](audio_44k)
+                detected_key = DetectedKey(
+                    key=key_str,
+                    scale=scale_str,
+                    strength=float(strength_val),
+                )
+        except Exception as exc:
+            log.warning("BPM/Key detection failed for %s: %s", track.file_path, exc)
 
     # ── Time curves (librosa, independent of Essentia models) ───────────────
     time_curves: TimeCurves | None = None
@@ -323,6 +353,8 @@ def run_essentia(track: TrackIndex) -> EssentiaOutput:
         raw=raw,
         scores=scores,
         time_curves=time_curves,
+        detected_bpm=detected_bpm,
+        detected_key=detected_key,
         flags=EssentiaFlags(essentia_failed=False),
     )
 
