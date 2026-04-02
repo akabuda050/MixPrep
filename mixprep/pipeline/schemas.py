@@ -186,6 +186,7 @@ class TrackProfile(BaseModel):
     """
 
     track_id: str
+    file_path: Optional[str] = None   # absolute path to audio file; from track index
     title: Optional[str] = None
     artist: Optional[str] = None
     duration: Optional[float] = None  # seconds; from track index

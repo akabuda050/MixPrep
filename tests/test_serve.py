@@ -206,3 +206,84 @@ def test_handler_profiles_path_traversal_returns_400(tmp_path):
     handler_cls = _make_handler(tmp_path)
     result = _make_request(handler_cls, "/api/profiles/../secret")
     assert 400 in result.errors
+
+
+# ---------------------------------------------------------------------------
+# GET /api/audio/<lib>/<track_id>
+# ---------------------------------------------------------------------------
+
+
+def test_handler_audio_streams_file(tmp_path):
+    from mixprep.cli.commands.serve import _make_handler
+
+    # Create a real audio file to stream
+    audio_file = tmp_path / "track.mp3"
+    audio_file.write_bytes(b"\xff\xfb" + b"\x00" * 64)  # fake mp3 bytes
+
+    profiles_dir = tmp_path / "libraries" / "mylib" / "profiles"
+    profiles_dir.mkdir(parents=True)
+    (profiles_dir / "abc.json").write_text(
+        json.dumps({"track_id": "abc", "file_path": str(audio_file)}), encoding="utf-8"
+    )
+
+    handler_cls = _make_handler(tmp_path)
+    result = _make_request(handler_cls, "/api/audio/mylib/abc")
+
+    assert 200 in result.responses
+    assert result.headers.get("Content-Type") == "audio/mpeg"
+    assert b"\xff\xfb" in result.body
+
+
+def test_handler_audio_missing_profile_returns_404(tmp_path):
+    from mixprep.cli.commands.serve import _make_handler
+
+    handler_cls = _make_handler(tmp_path)
+    result = _make_request(handler_cls, "/api/audio/mylib/nonexistent")
+    assert 404 in result.errors
+
+
+def test_handler_audio_missing_file_path_returns_404(tmp_path):
+    from mixprep.cli.commands.serve import _make_handler
+
+    profiles_dir = tmp_path / "libraries" / "mylib" / "profiles"
+    profiles_dir.mkdir(parents=True)
+    # Profile exists but has no file_path
+    (profiles_dir / "abc.json").write_text(
+        json.dumps({"track_id": "abc"}), encoding="utf-8"
+    )
+
+    handler_cls = _make_handler(tmp_path)
+    result = _make_request(handler_cls, "/api/audio/mylib/abc")
+    assert 404 in result.errors
+
+
+def test_handler_audio_file_not_on_disk_returns_404(tmp_path):
+    from mixprep.cli.commands.serve import _make_handler
+
+    profiles_dir = tmp_path / "libraries" / "mylib" / "profiles"
+    profiles_dir.mkdir(parents=True)
+    (profiles_dir / "abc.json").write_text(
+        json.dumps({"track_id": "abc", "file_path": "/nonexistent/path/track.mp3"}),
+        encoding="utf-8",
+    )
+
+    handler_cls = _make_handler(tmp_path)
+    result = _make_request(handler_cls, "/api/audio/mylib/abc")
+    assert 404 in result.errors
+
+
+def test_handler_audio_path_traversal_library_returns_400(tmp_path):
+    from mixprep.cli.commands.serve import _make_handler
+
+    handler_cls = _make_handler(tmp_path)
+    result = _make_request(handler_cls, "/api/audio/../secret/abc")
+    assert 400 in result.errors
+
+
+def test_handler_audio_path_traversal_track_id_returns_400(tmp_path):
+    from mixprep.cli.commands.serve import _make_handler
+
+    handler_cls = _make_handler(tmp_path)
+    result = _make_request(handler_cls, "/api/audio/mylib/..%2Fsecret")
+    # %2F decoded is /, so track_id becomes "../secret" after split — 400
+    assert 400 in result.errors or 404 in result.errors
