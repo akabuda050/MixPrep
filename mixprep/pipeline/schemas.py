@@ -70,9 +70,12 @@ class TrackIndex(BaseModel):
 
     @field_validator("file_path")
     @classmethod
-    def file_path_nonempty(cls, v: str) -> str:
+    def file_path_absolute(cls, v: str) -> str:
+        from pathlib import Path
         if not v.strip():
             raise ValueError("file_path must not be empty")
+        if not Path(v).is_absolute():
+            raise ValueError("file_path must be an absolute path")
         return v
 
     @field_validator("duration")

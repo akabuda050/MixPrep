@@ -317,14 +317,21 @@ def run_essentia(track: TrackIndex) -> EssentiaOutput:
 
     # ── Assemble raw activations ─────────────────────────────────────────────
     # MAEST outputs raw logits (1,1,1,519) — apply softmax to get probabilities.
+    maest_labels = _labels.get("maest", [])
     maest_probs = _softmax(_pool_mean(maest_act))
+    if len(maest_labels) != len(maest_probs):
+        log.warning(
+            "MAEST label count mismatch: %d labels vs %d model outputs — truncating to shorter",
+            len(maest_labels),
+            len(maest_probs),
+        )
     raw = EssentiaRaw(
         discogs_effnet_embedding=_pool_mean(effnet_emb).tolist(),
         msd_musicnn_embedding=_pool_mean(musicnn_emb).tolist(),
         discogs_effnet_activations=_activation_dict(effnet_act, _labels.get("effnet", [])),
         maest_activations={
             label: float(maest_probs[i])
-            for i, label in enumerate(_labels.get("maest", []))
+            for i, label in enumerate(maest_labels)
             if i < len(maest_probs)
         },
         jamendo_genre_activations=_activation_dict(
@@ -336,15 +343,23 @@ def run_essentia(track: TrackIndex) -> EssentiaOutput:
     # Binary head positive-class indices (verified by running real inference):
     #   idx 0 = positive: danceability(danceable), tonal
     #   idx 1 = positive: timbre(bright), voice(vocal)
-    # arousal_valence: (valence, arousal) — DEAM convention. dim 1 = arousal [1–9].
-    av_mean = _pool_mean(av_act)
+    # arousal_valence: (valence, arousal) — DEAM convention. dim 0 = valence, dim 1 = arousal [1–9].
+    try:
+        av_mean = _pool_mean(av_act)
+        arousal_val: float | None = float(av_mean[1]) if len(av_mean) >= 2 else None
+        approachability_val: float | None = float(_pool_mean(approach_act)[0])
+        engagement_val: float | None = float(_pool_mean(engagement_act)[0])
+    except (IndexError, ValueError) as exc:
+        log.warning("Score extraction failed for %s: %s", track.file_path, exc)
+        return _null_output(track.track_id, time_curves)
+
     scores = EssentiaScores(
         danceability=_binary_score(dance_act, idx=0),
-        arousal=float(av_mean[1]) if len(av_mean) >= 2 else None,
+        arousal=arousal_val,
         tonal=_binary_score(tonal_act, idx=0),
         timbre_bright=_binary_score(timbre_act, idx=1),
-        approachability=float(_pool_mean(approach_act)[0]),
-        engagement=float(_pool_mean(engagement_act)[0]),
+        approachability=approachability_val,
+        engagement=engagement_val,
         vocal_probability=_binary_score(voice_act, idx=1),
     )
 

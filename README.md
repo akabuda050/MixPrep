@@ -16,7 +16,7 @@ Analyzes your music library using machine learning to extract genre, mood, energ
 1. Download models        mixprep models download
 2. Scan your library      mixprep scan /path/to/music --library my_library
 3. Analyze tracks         mixprep analyze --stage essentia --library my_library
-                          mixprep analyze --stage classify --library my_library
+                          mixprep analyze --stage profile --library my_library
 4. Build a set            mixprep build --profile peak --duration 60 --library my_library
 ```
 
@@ -160,7 +160,7 @@ Analysis results are stored in `~/.local/share/mixprep/data` (override with `MIX
     └── <library>/
         ├── tracks/<track_id>.json      # file index + BPM, key, title, artist
         ├── essentia/<track_id>.json    # raw ML scores + time curves
-        ├── intelligence/<track_id>.json # unified per-track intelligence
+        ├── profiles/<track_id>.json    # unified per-track profile (energy, phase scores, genres)
         └── sets/<hash>_set.json        # generated DJ set plan
 ```
 
@@ -173,45 +173,43 @@ Each file is plain JSON — open and inspect at any stage.
 | Score | Range | Meaning |
 |---|---|---|
 | `danceability` | 0–1 | How suitable the track is for dancing. High = danceable, low = not. |
-| `arousal` | 1–9 | Energy and intensity level (MuSe scale). ~3 = calm/ambient, ~5–6 = mid-energy house, ~8 = peak techno. |
+| `arousal` | 0–1 | Energy and intensity level (normalized from DEAM [1–9]). ~0.25 = calm/ambient, ~0.5 = mid-energy house, ~0.9 = peak techno. |
+| `energy` | 0–1 | Derived: `0.6 × arousal + 0.4 × danceability`. |
+| `groove` | 0–1 | Derived: `0.5 × danceability + 0.3 × approachability + 0.2 × tonal`. |
 | `tonal` | 0–1 | How harmonic/melodic the track is. High = tonal (chords, melody), low = atonal (noise, pure rhythm). |
 | `timbre_bright` | 0–1 | Brightness of the sound. High = bright/sharp (lots of highs), low = dark/warm (more bass/sub). |
 | `approachability` | 0–1 | How mainstream the sound is. High = accessible/commercial, low = niche/experimental. |
 | `engagement` | 0–1 | Whether the track demands active listening. High = foreground/engaging, low = background/chill. |
 | `vocal_probability` | 0–1 | Likelihood of a human voice. > 0.5 = likely vocal, < 0.3 = likely instrumental. |
+| `camelot` | e.g. `8A` | Camelot wheel key. Parsed from file tag or detected by audio analysis. |
+| `warmup_score` | 0–1 | Suitability for set warm-up phase. |
+| `build_score` | 0–1 | Suitability for build phase. |
+| `peak_score` | 0–1 | Suitability for peak time. |
+| `reset_score` | 0–1 | Suitability for reset/breakdown. |
+| `winddown_score` | 0–1 | Suitability for closing/wind-down. |
 
-### Track intelligence (`tracks/<track_id>.json`)
+### Track profile (`profiles/<track_id>.json`)
 
 ```json
 {
   "track_id": "2abc...",
-  "genres": [{"label": "Techno", "score": 0.82, "sources": ["maest", "effnet"]}],
-  "tags": [{"label": "energetic", "score": 0.91, "sources": ["mood_theme"]}],
-  "instruments": [{"label": "synthesizer", "score": 0.74, "sources": ["instrument"]}],
-  "scores": {
-    "danceability": 0.88,
-    "arousal": 7.2,
-    "tonal": 0.92,
-    "timbre_bright": 0.61,
-    "approachability": 0.54,
-    "engagement": 0.73,
-    "vocal_probability": 0.22
-  },
-  "profile": {
-    "energy_level": 0.74,
-    "mixability": 0.81,
-    "warmup_score": 0.34,
-    "peak_time_score": 0.87,
-    "closing_score": 0.29
-  },
-  "structure": [
-    {"label": "intro", "start": 0.0, "end": 32.1, "confidence": 0.71},
-    {"label": "drop", "start": 58.2, "end": 86.7, "confidence": 0.76}
-  ],
-  "flags": {
-    "low_confidence": false,
-    "essentia_failed": false
-  }
+  "camelot": "11A",
+  "bpm": 132.0,
+  "energy": 0.74,
+  "groove": 0.68,
+  "danceability": 0.88,
+  "arousal": 0.77,
+  "tonal": 0.92,
+  "timbre_bright": 0.61,
+  "approachability": 0.54,
+  "engagement": 0.73,
+  "vocal_probability": 0.22,
+  "warmup_score": 0.34,
+  "build_score": 0.62,
+  "peak_score": 0.87,
+  "reset_score": 0.41,
+  "winddown_score": 0.28,
+  "genres": [{"label": "Techno", "score": 0.82, "sources": ["maest", "effnet"]}]
 }
 ```
 
