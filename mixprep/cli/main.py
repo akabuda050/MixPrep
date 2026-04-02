@@ -48,24 +48,29 @@ def models_clear(
 
 @app.command("analyze")
 def analyze(
-    stage: str = typer.Option(..., help="Pipeline stage: ingest | essentia | classify"),
+    stage: str = typer.Option(..., help="Pipeline stage: essentia | classify"),
+    library: str = typer.Option(..., help="Library name (e.g. house_sets, techno_main)"),
 ) -> None:
     """Run an analysis stage against the scanned library."""
     from mixprep.cli.commands.analyze import run_analyze
 
-    run_analyze(stage)
+    run_analyze(stage, library)
 
 
 @app.command("scan")
 def scan(
     directory: str = typer.Argument(..., help="Path to music library directory"),
+    library: str = typer.Option(..., help="Library name (e.g. house_sets, techno_main)"),
+    prune: bool = typer.Option(
+        False, "--prune", help="Remove entries whose audio file no longer exists"
+    ),
 ) -> None:
     """Scan a music library directory and index all audio files."""
     from pathlib import Path
 
     from mixprep.cli.commands.scan import run_scan
 
-    run_scan(Path(directory))
+    run_scan(Path(directory), library, prune=prune)
 
 
 if __name__ == "__main__":

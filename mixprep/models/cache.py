@@ -17,12 +17,14 @@ def models_dir() -> Path:
     return _xdg_data_home() / "mixprep" / "models"
 
 
-def data_dir() -> Path:
-    """Resolve data directory: MIXPREP_DATA_DIR → XDG default."""
+def data_dir(library: str) -> Path:
+    """Resolve data directory for *library*.
+
+    MIXPREP_DATA_DIR / libraries/<name>  (base from env or XDG default).
+    """
     env = os.environ.get("MIXPREP_DATA_DIR")
-    if env:
-        return Path(env)
-    return _xdg_data_home() / "mixprep" / "data"
+    base = Path(env) if env else _xdg_data_home() / "mixprep" / "data"
+    return base / "libraries" / library
 
 
 def model_path(filename: str) -> Path:
@@ -35,7 +37,7 @@ def ensure_models_dir() -> Path:
     return d
 
 
-def ensure_data_dir() -> Path:
-    d = data_dir()
+def ensure_data_dir(library: str) -> Path:
+    d = data_dir(library)
     d.mkdir(parents=True, exist_ok=True)
     return d

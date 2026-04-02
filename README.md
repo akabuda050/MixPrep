@@ -6,22 +6,26 @@ Analyzes your music library using machine learning to extract genre, mood, energ
 
 ## What it does
 
-- **Scan** — indexes your music library, assigns stable track IDs
-- **Analyze** — reads BPM and key from file tags (set by your DJ software); runs ML models to detect genre, mood, energy, danceability, vocals, instruments
+- **Scan** — indexes your music library, assigns stable track IDs, and reads BPM, key, title, artist from file tags — all in one pass
+- **Analyze** — runs ML models to detect genre, mood, energy, danceability, vocals, instruments
 - **Build** — generates candidate mix sets for a chosen profile using beam search
 
 ## Workflow
 
 ```
 1. Download models        mixprep models download
-2. Scan your library      mixprep scan /path/to/music
-3. Analyze tracks         mixprep analyze --stage ingest
-                          mixprep analyze --stage essentia
-                          mixprep analyze --stage classify
-4. Build a set            mixprep build --profile peak --duration 60
+2. Scan your library      mixprep scan /path/to/music --library my_library
+3. Analyze tracks         mixprep analyze --stage essentia --library my_library
+                          mixprep analyze --stage classify --library my_library
+4. Build a set            mixprep build --profile peak --duration 60 --library my_library
 ```
 
-`--duration` is in minutes. Each step produces reviewable JSON files you can inspect before running the next one.
+`--library` is required on every command — it namespaces all output so you can maintain multiple isolated libraries (e.g. `house_sets`, `techno_main`). `--duration` is in minutes. Each step produces reviewable JSON files you can inspect before running the next one.
+
+To remove entries for files that no longer exist on disk:
+```
+mixprep scan /path/to/music --library my_library --prune
+```
 
 ## Requirements
 
@@ -90,7 +94,7 @@ uv run pytest
 
 MixPrep uses pre-trained Essentia models for classification. All commands are under `mixprep models`.
 
-Models are stored in `~/.local/share/mixprep/models` by default. Override with `MIXPREP_MODELS_DIR`:
+Models are stored in `~/.local/share/mixprep/models` by default (shared across all libraries). Override with `MIXPREP_MODELS_DIR`:
 
 ```bash
 export MIXPREP_MODELS_DIR=/data/mixprep/models
@@ -143,7 +147,8 @@ Removes the cached model file. Use `download` to re-fetch.
 | `essentia-engagement` | Active vs background listening [0–1] |
 | `essentia-voice-instrumental` | Vocal probability [0–1] |
 | `essentia-danceability` | Danceability score [0–1] |
-| `essentia-arousal-valence-muse` | Arousal [1–9] — MuSe dataset (valence excluded) |
+| `essentia-arousal-valence-deam` | Arousal [1–9] — DEAM dataset (dim 1 = arousal, valence excluded) |
+| `essentia-arousal-valence-deam-labels` | Label metadata for arousal-valence-deam |
 
 ## Output
 
@@ -151,12 +156,15 @@ Analysis results are stored in `~/.local/share/mixprep/data` (override with `MIX
 
 ```
 ~/.local/share/mixprep/data/
-├── scan.json                   # library index (track IDs, paths, hashes)
-├── metadata/<track_id>.json    # BPM, key, title, artist from file tags
-├── essentia/<track_id>.json    # raw ML scores + time curves
-├── tracks/<track_id>.json      # unified per-track intelligence
-└── sets/<hash>_set.json        # generated DJ set plan
+└── libraries/
+    └── <library>/
+        ├── tracks/<track_id>.json      # file index + BPM, key, title, artist
+        ├── essentia/<track_id>.json    # raw ML scores + time curves
+        ├── intelligence/<track_id>.json # unified per-track intelligence
+        └── sets/<hash>_set.json        # generated DJ set plan
 ```
+
+Each library is fully isolated. Models are shared across all libraries (`~/.local/share/mixprep/models`, override with `MIXPREP_MODELS_DIR`).
 
 Each file is plain JSON — open and inspect at any stage.
 

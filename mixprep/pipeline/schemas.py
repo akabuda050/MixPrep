@@ -17,28 +17,55 @@ from pydantic import BaseModel, field_validator
 # ---------------------------------------------------------------------------
 
 
+class TaggedValue(BaseModel):
+    """A single DJ tag value with provenance."""
+
+    value: Optional[float | str]  # null if the tag is absent in the file
+    source: str  # always "file_tag" for scan stage
+    confidence: float  # always 1.0 for file tags
+
+    @field_validator("source")
+    @classmethod
+    def source_nonempty(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("source must not be empty")
+        return v
+
+    @field_validator("confidence")
+    @classmethod
+    def confidence_in_range(cls, v: float) -> float:
+        if not (0.0 <= v <= 1.0):
+            raise ValueError("confidence must be in [0, 1]")
+        return v
+
+
 class TrackIndex(BaseModel):
-    """Stable file index entry produced by the scan stage."""
+    """Stable file index entry produced by the scan stage.
+
+    Contains both file metadata (duration, format, sample_rate) and DJ tags
+    (bpm, key, title, artist, album) — extracted in a single mutagen pass.
+
+    Identity rule: track_id is assigned once per absolute file_path and reused
+    on every subsequent scan as long as the path exists.  No content hashing —
+    tag edits, format conversions and metadata updates do not change identity.
+    """
 
     track_id: str
-    file_path: str
-    file_hash: str  # MD5 hex digest of file contents
-    duration: Optional[float]  # seconds; null if mutagen cannot read it
-    format: Optional[str]  # e.g. "mp3", "flac"; null if indeterminate
-    sample_rate: Optional[int]  # Hz; null if mutagen cannot read it
+    file_path: str  # absolute, resolved path
+    duration: Optional[float] = None  # seconds; null if mutagen cannot read it
+    format: Optional[str] = None  # e.g. "mp3", "flac"; null if indeterminate
+    sample_rate: Optional[int] = None  # Hz; null if mutagen cannot read it
+    bpm: Optional[TaggedValue] = None  # null if tag absent
+    key: Optional[TaggedValue] = None  # null if tag absent
+    title: Optional[str] = None
+    artist: Optional[str] = None
+    album: Optional[str] = None
 
     @field_validator("track_id")
     @classmethod
     def track_id_nonempty(cls, v: str) -> str:
         if not v.strip():
             raise ValueError("track_id must not be empty")
-        return v
-
-    @field_validator("file_hash")
-    @classmethod
-    def file_hash_nonempty(cls, v: str) -> str:
-        if not v.strip():
-            raise ValueError("file_hash must not be empty")
         return v
 
     @field_validator("file_path")
@@ -64,51 +91,6 @@ class TrackIndex(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# F2 — Ingest
-# ---------------------------------------------------------------------------
-
-
-class TaggedValue(BaseModel):
-    """A single DJ tag value with provenance."""
-
-    value: Optional[float | str]  # null if the tag is absent in the file
-    source: str  # always "file_tag" for ingest stage
-    confidence: float  # always 1.0 for file tags
-
-    @field_validator("source")
-    @classmethod
-    def source_nonempty(cls, v: str) -> str:
-        if not v.strip():
-            raise ValueError("source must not be empty")
-        return v
-
-    @field_validator("confidence")
-    @classmethod
-    def confidence_in_range(cls, v: float) -> float:
-        if not (0.0 <= v <= 1.0):
-            raise ValueError("confidence must be in [0, 1]")
-        return v
-
-
-class TrackMetadata(BaseModel):
-    """DJ tag metadata extracted from file tags."""
-
-    track_id: str
-    bpm: Optional[TaggedValue]  # null if tag absent
-    key: Optional[TaggedValue]  # null if tag absent
-    title: Optional[str]
-    artist: Optional[str]
-    album: Optional[str]
-
-    @field_validator("track_id")
-    @classmethod
-    def track_id_nonempty(cls, v: str) -> str:
-        if not v.strip():
-            raise ValueError("track_id must not be empty")
-        return v
-
-
-# ---------------------------------------------------------------------------
 # F3 — Essentia
 # ---------------------------------------------------------------------------
 
@@ -116,29 +98,23 @@ class TrackMetadata(BaseModel):
 class EssentiaRaw(BaseModel):
     """Raw model outputs — exact values before any normalization."""
 
-    discogs_effnet_embedding: Optional[list[float]]
-    msd_musicnn_embedding: Optional[list[float]]
-    discogs_effnet_activations: Optional[dict[str, float]]  # 400 Discogs styles
-    maest_activations: Optional[dict[str, float]]  # 519 Discogs styles
-    jamendo_genre_activations: Optional[dict[str, float]]  # 87 Jamendo genres
+    discogs_effnet_embedding: Optional[list[float]]  # 1280-dim EfficientNet embedding
+    msd_musicnn_embedding: Optional[list[float]]  # 200-dim MusiCNN embedding
+    discogs_effnet_activations: Optional[dict[str, float]]  # 400 Discogs styles, sigmoid [0–1]
+    maest_activations: Optional[dict[str, float]]  # 519 Discogs styles, softmax (sum=1)
+    jamendo_genre_activations: Optional[dict[str, float]]  # 87 Jamendo genres, sigmoid [0–1]
 
 
 class EssentiaScores(BaseModel):
-    """Normalized scalar scores ready for downstream use.
+    """Normalized scalar scores ready for downstream use."""
 
-    Only scores with reliable signal for DJ use-cases are included.
-    Last.fm-derived mood tags (aggressive, happy, party, sad, acoustic, etc.)
-    are excluded — they reflect subjective tagging semantics, not DJ-relevant
-    audio properties.
-    """
-
-    danceability: Optional[float]  # [0–1] danceable vs not
-    arousal: Optional[float]  # [1–9] MuSe energy scale
-    tonal: Optional[float]  # [0–1] tonal vs atonal
-    timbre_bright: Optional[float]  # [0–1] bright vs dark timbre
-    approachability: Optional[float]  # [0–1] mainstream vs niche
-    engagement: Optional[float]  # [0–1] active vs background listening
-    vocal_probability: Optional[float]  # [0–1] vocal vs instrumental
+    danceability: Optional[float]  # [0–1]  danceable probability (model idx 0)
+    arousal: Optional[float]  # [1–9]  DEAM scale (model output dim 1)
+    tonal: Optional[float]  # [0–1]  tonal probability (model idx 0)
+    timbre_bright: Optional[float]  # [0–1]  bright timbre probability (model idx 1)
+    approachability: Optional[float]  # [0–1]  regression output
+    engagement: Optional[float]  # [0–1]  regression output
+    vocal_probability: Optional[float]  # [0–1]  vocal probability (model idx 1)
 
 
 class TimeCurves(BaseModel):
