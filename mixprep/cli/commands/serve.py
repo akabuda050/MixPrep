@@ -2,16 +2,18 @@
 Serve command — minimal HTTP server for the profile viewer.
 
 Routes:
-  GET /                  → viewer.html
-  GET /index.html        → viewer.html
-  GET /api/libraries     → list of available library names
-  GET /api/profiles/<lib> → list of track profiles for <lib>
+  GET /                        → viewer.html
+  GET /index.html              → viewer.html
+  GET /api/libraries           → list of available library names
+  GET /api/profiles/<lib>      → list of track profiles for <lib>
+  GET /api/audio/<lib>/<id>    → stream audio file for track_id
 """
 
 from __future__ import annotations
 
 import http.server
 import json
+import mimetypes
 from pathlib import Path
 
 from rich.console import Console
@@ -31,8 +33,15 @@ def _make_handler(data_base: Path) -> type:
             elif self.path == "/api/libraries":
                 self._serve_libraries()
             elif self.path.startswith("/api/profiles/"):
-                lib = self.path[len("/api/profiles/") :]
+                lib = self.path[len("/api/profiles/"):]
                 self._serve_profiles(lib)
+            elif self.path.startswith("/api/audio/"):
+                rest = self.path[len("/api/audio/"):]
+                parts = rest.split("/", 1)
+                if len(parts) == 2:
+                    self._serve_audio(parts[0], parts[1])
+                else:
+                    self.send_error(400)
             else:
                 self.send_error(404)
 
@@ -70,6 +79,41 @@ def _make_handler(data_base: Path) -> type:
                     except Exception:
                         pass
             self._send_json(items)
+
+        def _serve_audio(self, library: str, track_id: str) -> None:
+            if not library or "/" in library or "\\" in library or ".." in library:
+                self.send_error(400)
+                return
+            if not track_id or "/" in track_id or "\\" in track_id or ".." in track_id:
+                self.send_error(400)
+                return
+            profile_path = data_base / "libraries" / library / "profiles" / f"{track_id}.json"
+            if not profile_path.exists():
+                self.send_error(404)
+                return
+            try:
+                profile = json.loads(profile_path.read_text(encoding="utf-8"))
+                fp = profile.get("file_path")
+                if not fp:
+                    self.send_error(404)
+                    return
+                file_path = Path(fp)
+            except Exception:
+                self.send_error(500)
+                return
+            if not file_path.is_file():
+                self.send_error(404)
+                return
+            content_type = mimetypes.guess_type(file_path.name)[0] or "application/octet-stream"
+            size = file_path.stat().st_size
+            self.send_response(200)
+            self.send_header("Content-Type", content_type)
+            self.send_header("Content-Length", str(size))
+            self.send_header("Accept-Ranges", "bytes")
+            self.end_headers()
+            with file_path.open("rb") as f:
+                while chunk := f.read(65536):
+                    self.wfile.write(chunk)
 
         def _send_json(self, data: object) -> None:
             body = json.dumps(data, ensure_ascii=False).encode("utf-8")

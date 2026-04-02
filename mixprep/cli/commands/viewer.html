@@ -207,6 +207,45 @@ body{background:var(--bg);color:var(--text);font:13px/1.5 'Inter',system-ui,sans
 .d-chip-label{font-size:9px;color:var(--t2);text-transform:uppercase;letter-spacing:.1em}
 .d-chip-val{font-size:15px;font-weight:700;color:var(--text);line-height:1}
 
+/* ── player ── */
+.d-player{
+  background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);
+  padding:10px 14px;display:flex;align-items:center;gap:10px;
+}
+.pl-btn{
+  width:32px;height:32px;min-width:32px;flex-shrink:0;
+  background:var(--accent);border:none;border-radius:50%;
+  color:#000;cursor:pointer;font-size:12px;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+  transition:opacity .12s;
+}
+.pl-btn:hover{opacity:.8}
+.pl-time{font-size:10px;color:var(--t2);font-variant-numeric:tabular-nums;flex-shrink:0;min-width:30px}
+.pl-time.pl-dur{text-align:right;color:var(--t3)}
+.pl-progress{
+  flex:1;height:6px;background:var(--b2);border-radius:3px;cursor:pointer;position:relative;
+}
+.pl-progress-fill{height:100%;background:var(--accent);border-radius:3px;width:0%;transition:width .1s linear}
+.pl-vol-wrap{display:flex;align-items:center;gap:5px;flex-shrink:0}
+.pl-vol-icon{font-size:12px;color:var(--t2);cursor:pointer;flex-shrink:0;user-select:none}
+.pl-vol{
+  -webkit-appearance:none;appearance:none;
+  width:64px;height:3px;background:var(--b2);border-radius:2px;cursor:pointer;outline:none;
+}
+.pl-vol::-webkit-slider-thumb{
+  -webkit-appearance:none;width:10px;height:10px;border-radius:50%;
+  background:var(--t2);cursor:pointer;transition:background .1s;
+}
+.pl-vol::-webkit-slider-thumb:hover{background:var(--accent)}
+.pl-vol::-moz-range-thumb{width:10px;height:10px;border:none;border-radius:50%;background:var(--t2);cursor:pointer}
+.pl-dl{
+  background:none;border:1px solid var(--b2);border-radius:4px;
+  color:var(--t2);cursor:pointer;font-size:11px;padding:4px 8px;
+  flex-shrink:0;text-decoration:none;display:flex;align-items:center;
+  transition:all .12s;
+}
+.pl-dl:hover{border-color:var(--accent);color:var(--accent)}
+
 .d-section-title{font-size:9px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.12em;margin-bottom:12px}
 .d-section{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:16px}
 
@@ -315,6 +354,7 @@ let sortAsc   = true;
 let query     = '';
 let visible   = PAGE_SIZE;
 let selected  = null;
+let currentLibrary = null;
 
 // ── Camelot wheel sort position ──
 function camelotPos(c) {
@@ -458,6 +498,18 @@ function renderDetail(p) {
     </div>
   </div>
 
+  <div class="d-player" data-src="/api/audio/${encodeURIComponent(currentLibrary)}/${encodeURIComponent(p.track_id)}" data-filename="${esc((() => { const orig = p.file_path ? p.file_path.split('/').pop() : p.track_id; if (!p.artist || !p.title) return orig; const ext = orig.includes('.') ? '.' + orig.split('.').pop() : ''; return p.artist.replace(/[/\\?%*:|"<>]/g,'_') + ' - ' + p.title.replace(/[/\\?%*:|"<>]/g,'_') + ext; })())}">
+    <button class="pl-btn">▶</button>
+    <span class="pl-time pl-cur">0:00</span>
+    <div class="pl-progress"><div class="pl-progress-fill"></div></div>
+    <span class="pl-time pl-dur">—</span>
+    <div class="pl-vol-wrap">
+      <span class="pl-vol-icon">🔊</span>
+      <input class="pl-vol" type="range" min="0" max="1" step="0.02" value="1">
+    </div>
+    <a class="pl-dl" href="${encodeURIComponent(currentLibrary)}/${encodeURIComponent(p.track_id)}" title="Download">↓</a>
+  </div>
+
   <div class="d-section">
     <div class="d-section-title">Audio profile</div>
     <div class="score-grid">
@@ -527,11 +579,69 @@ function render() {
 
 function isMobile() { return window.innerWidth <= 640; }
 
+let _audio = null;  // single shared Audio instance
+
+function fmtTime(s) {
+  if (!isFinite(s)) return '—';
+  return `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+}
+
+function initPlayer(container) {
+  const src   = container.dataset.src;
+  const btn   = container.querySelector('.pl-btn');
+  const fill  = container.querySelector('.pl-progress-fill');
+  const prog  = container.querySelector('.pl-progress');
+  const curEl = container.querySelector('.pl-cur');
+  const durEl = container.querySelector('.pl-dur');
+  const vol   = container.querySelector('.pl-vol');
+  const dlBtn = container.querySelector('.pl-dl');
+
+  // Fix download link
+  dlBtn.href = src;
+  dlBtn.download = container.dataset.filename || 'track';
+
+  // Stop previous track
+  if (_audio) { _audio.pause(); _audio.src = ''; }
+  _audio = new Audio();
+  _audio.preload = 'none';
+  _audio.src = src;
+
+  _audio.addEventListener('loadedmetadata', () => {
+    durEl.textContent = '-' + fmtTime(_audio.duration);
+  });
+  _audio.addEventListener('timeupdate', () => {
+    const pct = _audio.duration ? (_audio.currentTime / _audio.duration) * 100 : 0;
+    fill.style.width = pct + '%';
+    curEl.textContent = fmtTime(_audio.currentTime);
+    if (_audio.duration) durEl.textContent = '-' + fmtTime(_audio.duration - _audio.currentTime);
+  });
+  _audio.addEventListener('ended', () => {
+    btn.textContent = '▶';
+    fill.style.width = '0%';
+    curEl.textContent = '0:00';
+    durEl.textContent = '-' + fmtTime(_audio.duration);
+  });
+
+  btn.addEventListener('click', () => {
+    if (_audio.paused) { _audio.play(); btn.textContent = '■'; }
+    else               { _audio.pause(); btn.textContent = '▶'; }
+  });
+
+  prog.addEventListener('click', e => {
+    if (!_audio.duration) return;
+    const r = prog.getBoundingClientRect();
+    _audio.currentTime = ((e.clientX - r.left) / r.width) * _audio.duration;
+  });
+
+  vol.addEventListener('input', () => { _audio.volume = parseFloat(vol.value); });
+}
+
 function showDetail(p) {
   document.getElementById('detail-empty').classList.add('hidden');
   const dc = document.getElementById('detail-content');
   dc.classList.remove('hidden');
   dc.innerHTML = renderDetail(p);
+  initPlayer(dc.querySelector('.d-player'));
   if (isMobile()) {
     document.getElementById('tracks').classList.add('detail-open');
     document.getElementById('back-btn').classList.remove('hidden');
@@ -672,7 +782,7 @@ async function loadLibraries() {
 }
 
 function enterLibrary(name, ps) {
-  profiles = ps; visible = PAGE_SIZE; query = ''; selected = null;
+  profiles = ps; visible = PAGE_SIZE; query = ''; selected = null; currentLibrary = name;
   document.getElementById('search').value = '';
   document.getElementById('picker').classList.add('hidden');
   document.getElementById('tracks').classList.remove('hidden');
@@ -686,6 +796,7 @@ function enterLibrary(name, ps) {
 }
 
 function showPicker() {
+  if (_audio) { _audio.pause(); _audio.src = ''; _audio = null; }
   document.getElementById('tracks').classList.add('hidden');
   document.getElementById('search').classList.add('hidden');
   document.getElementById('stats').classList.add('hidden');
