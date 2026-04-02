@@ -442,6 +442,8 @@ def compute_profile(track: TrackIndex, essentia: EssentiaOutput) -> TrackProfile
 
     return TrackProfile(
         track_id=track.track_id,
+        title=track.title,
+        artist=track.artist,
         duration=track.duration,
         camelot=camelot,
         bpm=bpm,

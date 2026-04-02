@@ -186,6 +186,8 @@ class TrackProfile(BaseModel):
     """
 
     track_id: str
+    title: Optional[str] = None
+    artist: Optional[str] = None
     duration: Optional[float] = None  # seconds; from track index
     camelot: Optional[str] = None  # e.g. "8A"; null if key absent or unparseable
     bpm: Optional[float] = None  # raw BPM; null if tag absent
