@@ -43,7 +43,7 @@ body{background:var(--bg);color:var(--text);font:13px/1.5 'Inter',system-ui,sans
 #stats{color:var(--t2);font-size:11px;flex-shrink:0;white-space:nowrap}
 
 /* ─── screens ─── */
-.screen{flex:1;overflow:hidden;display:flex;flex-direction:column}
+.screen{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column}
 .hidden{display:none!important}
 
 /* ─── library picker — split ─── */
@@ -109,13 +109,144 @@ body{background:var(--bg);color:var(--text);font:13px/1.5 'Inter',system-ui,sans
 }
 .browse-btn:hover{opacity:.85}
 
+
+/* ─── mixer bar ─── */
+#mixer{
+  display:flex;align-items:stretch;
+  background:var(--s1);border-top:1px solid var(--b1);
+  height:130px;min-height:130px;flex-shrink:0;
+}
+.deck{
+  flex:1;display:flex;flex-direction:column;justify-content:center;
+  padding:8px 14px;gap:5px;min-width:0;overflow:hidden;
+}
+.deck-top{display:flex;align-items:center;gap:8px;min-width:0}
+.deck-top .deck-artist{font-size:10px;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.deck-bottom{display:flex;align-items:center;gap:0;min-width:0}
+.deck-a .deck-bottom{flex-direction:row}
+.deck-b .deck-bottom{flex-direction:row-reverse}
+.deck-bottom .deck-controls{flex:1;min-width:0;display:flex;align-items:center;gap:8px}
+.deck-bottom .deck-eq{flex-shrink:0;border-left:1px solid var(--b1);padding-left:12px;margin-left:8px}
+.deck-b .deck-bottom .deck-eq{border-left:none;border-right:1px solid var(--b1);padding-left:0;padding-right:12px;margin-left:0;margin-right:8px}
+/* EQ knobs */
+.deck-eq{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.eq-band{display:flex;flex-direction:column;align-items:center;gap:2px;user-select:none}
+.eq-label{font-size:8px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em}
+.eq-val{font-size:8px;color:var(--t2);font-variant-numeric:tabular-nums;min-width:24px;text-align:center}
+.eq-knob{width:32px;height:32px;cursor:ns-resize;flex-shrink:0;touch-action:none}
+.deck-a{ border-right:1px solid var(--b1); }
+.deck-b{ border-left:1px solid var(--b1); }
+.deck-label{
+  font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+  flex-shrink:0;
+}
+.deck-a .deck-label{ color:#4e9fd4; }
+.deck-b .deck-label{ color:#c47ed4; }
+.deck-title{font-size:11px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px}
+.deck-artist{font-size:10px;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px}
+.deck-controls{display:flex;align-items:center;gap:8px;flex:1;min-width:0}
+.deck-play{
+  width:26px;height:26px;min-width:26px;flex-shrink:0;
+  background:var(--s3);border:1px solid var(--b2);border-radius:50%;
+  color:var(--text);cursor:pointer;font-size:10px;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .1s;
+}
+.deck-play:hover{border-color:var(--accent);color:var(--accent)}
+.deck-play.playing{background:var(--accent);border-color:var(--accent);color:#000}
+.deck-progress{flex:1;height:4px;background:var(--b2);border-radius:2px;cursor:pointer;position:relative;min-width:40px}
+.deck-progress-fill{height:100%;border-radius:2px;width:0%}
+.deck-a .deck-progress-fill{background:#4e9fd4}
+.deck-b .deck-progress-fill{background:#c47ed4}
+.deck-time{font-size:9px;color:var(--t3);font-variant-numeric:tabular-nums;flex-shrink:0;white-space:nowrap}
+.deck-vol{
+  -webkit-appearance:none;appearance:none;
+  width:50px;height:3px;background:var(--b2);border-radius:2px;cursor:pointer;outline:none;flex-shrink:0;
+}
+.deck-vol::-webkit-slider-thumb{
+  -webkit-appearance:none;width:9px;height:9px;border-radius:50%;
+  background:var(--t2);cursor:pointer;
+}
+.deck-empty{font-size:11px;color:var(--t3);font-style:italic}
+.deck-bpm{font-size:10px;color:var(--t2);flex-shrink:0;font-variant-numeric:tabular-nums;min-width:44px}
+.deck-bpm.synced{color:var(--accent)}
+.deck-sync{
+  background:none;border:1px solid var(--b2);border-radius:3px;
+  color:var(--t3);cursor:pointer;font-size:9px;font-weight:700;
+  padding:2px 7px;letter-spacing:.06em;text-transform:uppercase;
+  flex-shrink:0;transition:all .1s;
+}
+.deck-sync:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+.deck-sync.active{border-color:var(--accent);color:var(--accent);background:var(--acc-d)}
+.deck-sync:disabled{opacity:.3;cursor:default}
+.deck-tempo{
+  -webkit-appearance:none;appearance:none;
+  width:60px;height:3px;background:var(--b2);border-radius:2px;cursor:pointer;outline:none;flex-shrink:0;
+}
+.deck-tempo::-webkit-slider-thumb{
+  -webkit-appearance:none;width:9px;height:9px;border-radius:50%;
+  background:var(--t2);cursor:pointer;
+}
+.deck-a .deck-tempo::-webkit-slider-thumb:hover{background:#4e9fd4}
+.deck-b .deck-tempo::-webkit-slider-thumb:hover{background:#c47ed4}
+.deck-tempo::-moz-range-thumb{width:9px;height:9px;border:none;border-radius:50%;background:var(--t2);cursor:pointer}
+
+/* crossfader center section */
+#xfader-wrap{
+  width:160px;min-width:120px;flex-shrink:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:6px;padding:8px 12px;
+}
+#xfader-labels{display:flex;justify-content:space-between;width:100%}
+#xfader-labels span{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+#xfader-labels .xl-a{color:#4e9fd4}
+#xfader-labels .xl-b{color:#c47ed4}
+#xfader{
+  -webkit-appearance:none;appearance:none;
+  width:100%;height:4px;background:var(--b2);border-radius:2px;cursor:pointer;outline:none;
+}
+#xfader::-webkit-slider-thumb{
+  -webkit-appearance:none;width:14px;height:14px;border-radius:50%;
+  background:var(--text);cursor:pointer;border:2px solid var(--bg);
+  box-shadow:0 0 0 1px var(--b2);transition:background .1s;
+}
+#xfader::-webkit-slider-thumb:hover{background:var(--accent)}
+#xfader::-moz-range-thumb{width:14px;height:14px;border:2px solid var(--bg);border-radius:50%;background:var(--text);cursor:pointer}
+#xfader-reset{
+  background:none;border:1px solid var(--b2);border-radius:3px;
+  color:var(--t3);cursor:pointer;font-size:9px;padding:2px 8px;
+  text-transform:uppercase;letter-spacing:.06em;transition:all .1s;
+}
+#xfader-reset:hover{border-color:var(--b2);color:var(--t2)}
+
+/* settings gear button — hidden on desktop, shown via media query on mobile */
+.deck-settings-btn{
+  display:none;
+  background:none;border:1px solid var(--b2);border-radius:4px;
+  color:var(--t2);cursor:pointer;font-size:13px;padding:2px 6px;flex-shrink:0;
+  transition:all .1s;
+}
+.deck-settings-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+/* assign buttons in detail panel */
+.d-assign{display:flex;gap:8px;flex-shrink:0}
+.d-assign-btn{
+  border:none;border-radius:5px;cursor:pointer;
+  font-size:11px;font-weight:700;letter-spacing:.08em;
+  padding:6px 16px;transition:opacity .12s;
+}
+.d-assign-btn.btn-a{background:rgba(78,159,212,.18);color:#4e9fd4;border:1px solid rgba(78,159,212,.3)}
+.d-assign-btn.btn-b{background:rgba(196,126,212,.18);color:#c47ed4;border:1px solid rgba(196,126,212,.3)}
+.d-assign-btn:hover{opacity:.75}
+.d-assign-btn.assigned{opacity:1;filter:brightness(1.3)}
+
 /* ─── tracks view: split ─── */
 #tracks{flex-direction:row;overflow:hidden}
 
 /* left: table */
 #table-wrap{
   display:flex;flex-direction:column;
-  width:55%;min-width:320px;
+  width:55%;min-width:320px;min-height:0;
   border-right:1px solid var(--b1);
   overflow:hidden;
 }
@@ -172,7 +303,6 @@ body{background:var(--bg);color:var(--text);font:13px/1.5 'Inter',system-ui,sans
 .col-bpm    {width:68px;flex-shrink:0;box-sizing:border-box;padding:0 10px}
 .col-key    {width:62px;flex-shrink:0;box-sizing:border-box;padding:0 8px}
 .col-energy {width:80px;flex-shrink:0;box-sizing:border-box;padding:0 10px}
-.col-groove {width:80px;flex-shrink:0;box-sizing:border-box;padding:0 10px}
 
 #load-more-row{
   padding:14px;text-align:center;border-top:1px solid var(--b1);
@@ -187,7 +317,7 @@ body{background:var(--bg);color:var(--text);font:13px/1.5 'Inter',system-ui,sans
 
 /* right: detail panel */
 #detail{
-  flex:1;min-width:0;overflow-y:auto;
+  flex:1;min-width:0;min-height:0;overflow-y:auto;
   background:var(--bg);
 }
 #detail-empty{
@@ -207,44 +337,6 @@ body{background:var(--bg);color:var(--text);font:13px/1.5 'Inter',system-ui,sans
 .d-chip-label{font-size:9px;color:var(--t2);text-transform:uppercase;letter-spacing:.1em}
 .d-chip-val{font-size:15px;font-weight:700;color:var(--text);line-height:1}
 
-/* ── player ── */
-.d-player{
-  background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);
-  padding:10px 14px;display:flex;align-items:center;gap:10px;
-}
-.pl-btn{
-  width:32px;height:32px;min-width:32px;flex-shrink:0;
-  background:var(--accent);border:none;border-radius:50%;
-  color:#000;cursor:pointer;font-size:12px;line-height:1;
-  display:flex;align-items:center;justify-content:center;
-  transition:opacity .12s;
-}
-.pl-btn:hover{opacity:.8}
-.pl-time{font-size:10px;color:var(--t2);font-variant-numeric:tabular-nums;flex-shrink:0;min-width:30px}
-.pl-time.pl-dur{text-align:right;color:var(--t3)}
-.pl-progress{
-  flex:1;height:6px;background:var(--b2);border-radius:3px;cursor:pointer;position:relative;
-}
-.pl-progress-fill{height:100%;background:var(--accent);border-radius:3px;width:0%;transition:width .1s linear}
-.pl-vol-wrap{display:flex;align-items:center;gap:5px;flex-shrink:0}
-.pl-vol-icon{font-size:12px;color:var(--t2);cursor:pointer;flex-shrink:0;user-select:none}
-.pl-vol{
-  -webkit-appearance:none;appearance:none;
-  width:64px;height:3px;background:var(--b2);border-radius:2px;cursor:pointer;outline:none;
-}
-.pl-vol::-webkit-slider-thumb{
-  -webkit-appearance:none;width:10px;height:10px;border-radius:50%;
-  background:var(--t2);cursor:pointer;transition:background .1s;
-}
-.pl-vol::-webkit-slider-thumb:hover{background:var(--accent)}
-.pl-vol::-moz-range-thumb{width:10px;height:10px;border:none;border-radius:50%;background:var(--t2);cursor:pointer}
-.pl-dl{
-  background:none;border:1px solid var(--b2);border-radius:4px;
-  color:var(--t2);cursor:pointer;font-size:11px;padding:4px 8px;
-  flex-shrink:0;text-decoration:none;display:flex;align-items:center;
-  transition:all .12s;
-}
-.pl-dl:hover{border-color:var(--accent);color:var(--accent)}
 
 .d-section-title{font-size:9px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.12em;margin-bottom:12px}
 .d-section{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:16px}
@@ -262,30 +354,88 @@ body{background:var(--bg);color:var(--text);font:13px/1.5 'Inter',system-ui,sans
 
 .msg-full{color:var(--t2);text-align:center;padding:60px 20px;font-size:13px}
 
-/* ─── mobile ─── */
+/* ─── mobile deck settings modal ─── */
+#deck-modal-overlay{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;
+  align-items:flex-end;justify-content:center;
+}
+#deck-modal-overlay.open{display:flex}
+#deck-modal{
+  background:var(--s1);border:1px solid var(--b1);border-radius:12px 12px 0 0;
+  width:100%;max-width:480px;padding:16px;display:flex;flex-direction:column;gap:14px;
+}
+#deck-modal-header{display:flex;align-items:center;justify-content:space-between}
+#deck-modal-title{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+#deck-modal-close{
+  background:none;border:none;color:var(--t2);cursor:pointer;font-size:18px;line-height:1;padding:4px 8px;
+}
+#deck-modal-eq{display:flex;justify-content:center;gap:24px}
+.modal-eq-band{display:flex;flex-direction:column;align-items:center;gap:4px;user-select:none}
+.modal-eq-label{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em}
+.modal-eq-val{font-size:10px;color:var(--t2);font-variant-numeric:tabular-nums;min-width:28px;text-align:center}
+.modal-eq-knob{width:52px;height:52px;cursor:ns-resize;touch-action:none}
+#deck-modal-tempo{display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--b1);padding-top:12px}
+#deck-modal-tempo-row{display:flex;align-items:center;gap:10px}
+#deck-modal-tempo label{font-size:10px;color:var(--t2);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
+#deck-modal-tempo-slider{flex:1;-webkit-appearance:none;appearance:none;height:4px;background:var(--b2);border-radius:2px;outline:none}
+#deck-modal-tempo-slider::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--text);cursor:pointer}
+#deck-modal-tempo-slider::-moz-range-thumb{width:14px;height:14px;border:none;border-radius:50%;background:var(--text);cursor:pointer}
+#deck-modal-bpm{font-size:11px;font-variant-numeric:tabular-nums;min-width:46px;text-align:right;color:var(--t2)}
+#deck-modal-sync-row{display:flex;gap:8px}
+.modal-btn{
+  flex:1;background:none;border:1px solid var(--b2);border-radius:5px;
+  color:var(--t2);cursor:pointer;font-size:11px;font-weight:700;
+  padding:6px 0;text-transform:uppercase;letter-spacing:.06em;
+}
+.modal-btn:active{background:var(--b2)}
+
+/* ─── mobile back btn ─── */
 #back-btn{
   display:none;background:none;border:none;color:var(--accent);
   cursor:pointer;font-size:12px;font-weight:600;padding:0;
   align-items:center;gap:5px;letter-spacing:.03em;flex-shrink:0;
 }
 #back-btn::before{content:'←';font-size:14px}
+
 @media(max-width:640px){
-  body{overflow:auto}
-  /* picker */
+  body{height:100dvh;height:100vh;overflow:hidden}
+
+  /* ── picker ── */
   #picker{flex-direction:column}
-  #lib-panel{width:100%;border-right:none;border-bottom:1px solid var(--b1)}
-  #lib-detail{min-height:300px}
-  /* tracks */
+  #lib-panel{width:100%;border-right:none;border-bottom:1px solid var(--b1);max-height:40vh}
+  #lib-detail{flex:1;min-height:0;overflow-y:auto}
+
+  /* ── tracks ── */
   #tracks{flex-direction:column}
-  #table-wrap{width:100%;border-right:none;border-bottom:1px solid var(--b1);min-width:0}
-  #detail{min-height:0}
+  #table-wrap{width:100%;border-right:none;min-width:0;flex:1;min-height:0;overflow:hidden}
+  #detail{display:none}
   #tracks.detail-open #table-wrap{display:none}
+  #tracks.detail-open #detail{display:flex;flex-direction:column;flex:1;width:100%;min-height:0;overflow-y:auto}
   #tracks.detail-open #detail-empty{display:none}
   #back-btn{display:flex}
   #detail-content{padding:16px}
   #lib-detail-content{padding:16px}
   .score-grid{grid-template-columns:1fr}
   .d-meta{gap:8px}
+
+  /* ── mixer on mobile: two compact rows + xfader ── */
+  #mixer{flex-direction:column;height:auto;flex-shrink:0}
+  .deck{border:none;border-bottom:1px solid var(--b1);padding:5px 10px;gap:2px}
+  .deck-a{border-right:none}
+  .deck-b{border-left:none}
+  /* hide desktop EQ in mixer bar; shown via modal instead */
+  .deck-eq{display:none}
+  /* add settings gear button (shown only on mobile) */
+  .deck-settings-btn{display:flex}
+  #xfader-wrap{
+    width:100%;flex-direction:row;align-items:center;
+    min-height:40px;gap:10px;padding:6px 14px;
+    background:var(--s2);border-top:1px solid var(--b1);border-bottom:1px solid var(--b1);
+  }
+  #xfader-labels{display:none}
+  #xfader{flex:1}
+  .deck-vol{width:36px}
+  .deck-tempo{display:none!important}
 }
 </style>
 </head>
@@ -332,7 +482,6 @@ body{background:var(--bg);color:var(--text);font:13px/1.5 'Inter',system-ui,sans
       <button class="col-hdr col-bpm" data-sort="bpm" title="Beats per minute">BPM <span class="arrow"></span></button>
       <button class="col-hdr col-key" data-sort="camelot" title="Camelot wheel key — harmonic mixing position">Key <span class="arrow"></span></button>
       <button class="col-hdr col-energy" data-sort="energy" title="Overall intensity — how hard and exciting the track hits">Energy <span class="arrow"></span></button>
-      <button class="col-hdr col-groove" data-sort="groove" title="How much the track pulls you in and makes you move">Groove <span class="arrow"></span></button>
     </div>
     <div id="track-list"></div>
     <div id="load-more-row" class="hidden"></div>
@@ -344,6 +493,137 @@ body{background:var(--bg);color:var(--text);font:13px/1.5 'Inter',system-ui,sans
     <div id="detail-content" class="hidden"></div>
   </div>
 
+</div>
+
+<!-- mixer bar: shown when tracks screen is active -->
+<div id="mixer" class="hidden">
+  <!-- Deck A -->
+  <div class="deck deck-a" id="deck-a">
+    <div class="deck-top">
+      <span class="deck-label">A</span>
+      <span class="deck-empty" id="deck-a-empty">No track loaded</span>
+      <span class="deck-title hidden" id="deck-a-title"></span>
+      <span class="deck-artist hidden" id="deck-a-artist"></span>
+    </div>
+    <div class="deck-bottom">
+      <div class="deck-controls">
+        <button class="deck-play" id="deck-a-play">▶</button>
+        <div class="deck-progress" id="deck-a-prog"><div class="deck-progress-fill" id="deck-a-fill"></div></div>
+        <span class="deck-time" id="deck-a-time">0:00</span>
+        <input class="deck-vol" type="range" id="deck-a-vol" min="0" max="1" step="0.02" value="1">
+        <button class="deck-sync hidden" id="deck-a-sync" title="Sync BPM to deck B">SYNC</button>
+        <button class="deck-sync hidden" id="deck-a-reset" title="Reset to original BPM">RST</button>
+        <input class="deck-tempo hidden" type="range" id="deck-a-tempo" min="0.5" max="2" step="0.01" value="1" title="Tempo">
+        <span class="deck-bpm hidden" id="deck-a-bpm">—</span>
+        <button class="deck-settings-btn" id="deck-a-settings" title="EQ & Tempo">⚙</button>
+      </div>
+      <div class="deck-eq">
+        <div class="eq-band">
+          <span class="eq-label">Hi</span>
+          <canvas class="eq-knob" id="deck-a-hi" width="32" height="32"></canvas>
+          <span class="eq-val" id="deck-a-hi-val">0</span>
+        </div>
+        <div class="eq-band">
+          <span class="eq-label">Mid</span>
+          <canvas class="eq-knob" id="deck-a-mid" width="32" height="32"></canvas>
+          <span class="eq-val" id="deck-a-mid-val">0</span>
+        </div>
+        <div class="eq-band">
+          <span class="eq-label">Lo</span>
+          <canvas class="eq-knob" id="deck-a-lo" width="32" height="32"></canvas>
+          <span class="eq-val" id="deck-a-lo-val">0</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Crossfader -->
+  <div id="xfader-wrap">
+    <div id="xfader-labels">
+      <span class="xl-a">A</span>
+      <span class="xl-b">B</span>
+    </div>
+    <input type="range" id="xfader" min="0" max="100" value="50">
+    <button id="xfader-reset">center</button>
+  </div>
+
+  <!-- Deck B -->
+  <div class="deck deck-b" id="deck-b">
+    <div class="deck-top">
+      <span class="deck-label">B</span>
+      <span class="deck-empty" id="deck-b-empty">No track loaded</span>
+      <span class="deck-title hidden" id="deck-b-title"></span>
+      <span class="deck-artist hidden" id="deck-b-artist"></span>
+    </div>
+    <div class="deck-bottom">
+      <div class="deck-eq">
+        <div class="eq-band">
+          <span class="eq-label">Hi</span>
+          <canvas class="eq-knob" id="deck-b-hi" width="32" height="32"></canvas>
+          <span class="eq-val" id="deck-b-hi-val">0</span>
+        </div>
+        <div class="eq-band">
+          <span class="eq-label">Mid</span>
+          <canvas class="eq-knob" id="deck-b-mid" width="32" height="32"></canvas>
+          <span class="eq-val" id="deck-b-mid-val">0</span>
+        </div>
+        <div class="eq-band">
+          <span class="eq-label">Lo</span>
+          <canvas class="eq-knob" id="deck-b-lo" width="32" height="32"></canvas>
+          <span class="eq-val" id="deck-b-lo-val">0</span>
+        </div>
+      </div>
+      <div class="deck-controls">
+        <button class="deck-play" id="deck-b-play">▶</button>
+        <div class="deck-progress" id="deck-b-prog"><div class="deck-progress-fill" id="deck-b-fill"></div></div>
+        <span class="deck-time" id="deck-b-time">0:00</span>
+        <input class="deck-vol" type="range" id="deck-b-vol" min="0" max="1" step="0.02" value="1">
+        <button class="deck-sync hidden" id="deck-b-sync" title="Sync BPM to deck A">SYNC</button>
+        <button class="deck-sync hidden" id="deck-b-reset" title="Reset to original BPM">RST</button>
+        <input class="deck-tempo hidden" type="range" id="deck-b-tempo" min="0.5" max="2" step="0.01" value="1" title="Tempo">
+        <span class="deck-bpm hidden" id="deck-b-bpm">—</span>
+        <button class="deck-settings-btn" id="deck-b-settings" title="EQ & Tempo">⚙</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Mobile EQ/Tempo modal -->
+<div id="deck-modal-overlay">
+  <div id="deck-modal">
+    <div id="deck-modal-header">
+      <span id="deck-modal-title">Deck A — EQ &amp; Tempo</span>
+      <button id="deck-modal-close">×</button>
+    </div>
+    <div id="deck-modal-eq">
+      <div class="modal-eq-band">
+        <span class="modal-eq-label">Hi</span>
+        <canvas class="modal-eq-knob" id="modal-hi" width="52" height="52"></canvas>
+        <span class="modal-eq-val" id="modal-hi-val">0</span>
+      </div>
+      <div class="modal-eq-band">
+        <span class="modal-eq-label">Mid</span>
+        <canvas class="modal-eq-knob" id="modal-mid" width="52" height="52"></canvas>
+        <span class="modal-eq-val" id="modal-mid-val">0</span>
+      </div>
+      <div class="modal-eq-band">
+        <span class="modal-eq-label">Lo</span>
+        <canvas class="modal-eq-knob" id="modal-lo" width="52" height="52"></canvas>
+        <span class="modal-eq-val" id="modal-lo-val">0</span>
+      </div>
+    </div>
+    <div id="deck-modal-tempo">
+      <div id="deck-modal-tempo-row">
+        <label for="deck-modal-tempo-slider">Tempo</label>
+        <input type="range" id="deck-modal-tempo-slider" min="0.5" max="2" step="0.01" value="1">
+        <span id="deck-modal-bpm">—</span>
+      </div>
+      <div id="deck-modal-sync-row">
+        <button class="modal-btn" id="deck-modal-sync">SYNC</button>
+        <button class="modal-btn" id="deck-modal-rst">RST</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -429,7 +709,6 @@ function renderRow(p) {
   const bpm    = fmtBpm(p.bpm);
   const key    = p.camelot ? `<span class="camelot-sm">${p.camelot}</span>` : '<span style="color:var(--t3)">—</span>';
   const en = pctN(p.energy);
-  const gr = pctN(p.groove);
 
   function miniBar(cls, val, n, color) {
     return `<div class="mini-bar-wrap ${cls}">
@@ -446,7 +725,6 @@ function renderRow(p) {
   <div class="tr-cell col-bpm ${p.bpm==null?'dim':''}">${bpm}</div>
   <div class="tr-cell col-key">${key}</div>
   ${miniBar('col-energy', p.energy, en, '#d48040')}
-  ${miniBar('col-groove', p.groove, gr, '#40a8d4')}
 </div>`;
 }
 
@@ -498,16 +776,9 @@ function renderDetail(p) {
     </div>
   </div>
 
-  <div class="d-player" data-src="/api/audio/${encodeURIComponent(currentLibrary)}/${encodeURIComponent(p.track_id)}" data-filename="${esc((() => { const orig = p.file_path ? p.file_path.split('/').pop() : p.track_id; if (!p.artist || !p.title) return orig; const ext = orig.includes('.') ? '.' + orig.split('.').pop() : ''; return p.artist.replace(/[/\\?%*:|"<>]/g,'_') + ' - ' + p.title.replace(/[/\\?%*:|"<>]/g,'_') + ext; })())}">
-    <button class="pl-btn">▶</button>
-    <span class="pl-time pl-cur">0:00</span>
-    <div class="pl-progress"><div class="pl-progress-fill"></div></div>
-    <span class="pl-time pl-dur">—</span>
-    <div class="pl-vol-wrap">
-      <span class="pl-vol-icon">🔊</span>
-      <input class="pl-vol" type="range" min="0" max="1" step="0.02" value="1">
-    </div>
-    <a class="pl-dl" href="${encodeURIComponent(currentLibrary)}/${encodeURIComponent(p.track_id)}" title="Download">↓</a>
+  <div class="d-assign" data-track-id="${esc(p.track_id)}" data-src="/api/audio/${encodeURIComponent(currentLibrary)}/${encodeURIComponent(p.track_id)}">
+    <button class="d-assign-btn btn-a" data-deck="a">Load → A</button>
+    <button class="d-assign-btn btn-b" data-deck="b">Load → B</button>
   </div>
 
   <div class="d-section">
@@ -579,61 +850,434 @@ function render() {
 
 function isMobile() { return window.innerWidth <= 640; }
 
-let _audio = null;  // single shared Audio instance
-
+// ── DJ Mixer engine ──
 function fmtTime(s) {
-  if (!isFinite(s)) return '—';
+  if (!isFinite(s)) return '0:00';
   return `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 }
 
-function initPlayer(container) {
-  const src   = container.dataset.src;
-  const btn   = container.querySelector('.pl-btn');
-  const fill  = container.querySelector('.pl-progress-fill');
-  const prog  = container.querySelector('.pl-progress');
-  const curEl = container.querySelector('.pl-cur');
-  const durEl = container.querySelector('.pl-dur');
-  const vol   = container.querySelector('.pl-vol');
-  const dlBtn = container.querySelector('.pl-dl');
+// Shared AudioContext — created once, reused for both decks
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-  // Fix download link
-  dlBtn.href = src;
-  dlBtn.download = container.dataset.filename || 'track';
+// deck = { audio, src, bpm, gainNode, filters: {hi, mid, lo} }
+const decks = {
+  a: { audio: null, src: null, bpm: null, gainNode: null, filters: null },
+  b: { audio: null, src: null, bpm: null, gainNode: null, filters: null },
+};
 
-  // Stop previous track
-  if (_audio) { _audio.pause(); _audio.src = ''; }
-  _audio = new Audio();
-  _audio.preload = 'none';
-  _audio.src = src;
+function buildAudioChain(audioEl, id) {
+  // 3-band crossover, steep rolloff via 3 cascaded filters per band (-36dB/oct).
+  //   lo:  source → lp(250)×3  → loBoost  → loKill  → master
+  //   mid: source → lp(3k)×3 → hp(250)×3 → midBoost → midKill → master
+  //   hi:  source → hp(3k)×3  → hiBoost  → hiKill  → master
+  const source = audioCtx.createMediaElementSource(audioEl);
+  const master = audioCtx.createGain();
+  master.connect(audioCtx.destination);
 
-  _audio.addEventListener('loadedmetadata', () => {
-    durEl.textContent = '-' + fmtTime(_audio.duration);
+  // Build N cascaded filters of the same type/freq, return [first, last]
+  function cascade(inputNode, type, freq, count) {
+    let node = inputNode;
+    for (let i = 0; i < count; i++) {
+      const f = audioCtx.createBiquadFilter();
+      f.type = type;
+      f.frequency.value = freq;
+      node.connect(f);
+      node = f;
+    }
+    return node; // last filter in chain
+  }
+
+  function makeBranch(lastFilter, boostType, boostFreq) {
+    const boost = audioCtx.createBiquadFilter();
+    boost.type = boostType;
+    boost.frequency.value = boostFreq;
+    boost.gain.value = 0;
+    const kill = audioCtx.createGain();
+    kill.gain.value = 1;
+    lastFilter.connect(boost);
+    boost.connect(kill);
+    kill.connect(master);
+    return { boost, kill };
+  }
+
+  const loEnd  = cascade(source, 'lowpass',  250,  3);
+  const midEnd = cascade(cascade(source, 'lowpass', 3000, 3), 'highpass', 250, 3);
+  const hiEnd  = cascade(source, 'highpass', 3000, 3);
+
+  const bands = {
+    lo:  makeBranch(loEnd,  'lowshelf',  250),
+    mid: makeBranch(midEnd, 'peaking',  1000),
+    hi:  makeBranch(hiEnd,  'highshelf', 3000),
+  };
+
+  decks[id].gainNode = master;
+  decks[id].filters  = bands;
+}
+
+// db: -12 = kill (full mute), 0 = flat, +12 = boost
+// ── EQ Knobs ──
+const EQ_MIN = -12, EQ_MAX = 12;
+// knobState: canvas id → current db value
+const knobState = {};
+
+function drawKnob(canvas, db, deckId) {
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  const cx = w / 2, cy = h / 2, r = w / 2 - 3;
+  ctx.clearRect(0, 0, w, h);
+
+  const isKill = db <= EQ_MIN;
+  const t = (db - EQ_MIN) / (EQ_MAX - EQ_MIN); // 0..1, 0.5 = center = 0dB
+
+  // Angles: start at 7:30 (135°), end at 4:30 (405°=45°), center at 12 o'clock (270°)
+  const startAngle  = (135 * Math.PI) / 180;
+  const totalArc    = (270 * Math.PI) / 180; // 270° sweep
+  const centerAngle = startAngle + totalArc / 2; // = 270° = 12 o'clock
+  const angle = startAngle + t * totalArc;
+
+  const trackColor = isKill ? '#d44e4e' : '#2a2a2a';
+  const arcColor   = isKill ? '#d44e4e' : db > 0 ? '#e8b84b' : db < 0 ? '#4e9fd4' : '#444';
+  const dotColor   = isKill ? '#d44e4e' : deckId === 'a' ? '#4e9fd4' : '#c47ed4';
+
+  // Background track
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, startAngle, startAngle + totalArc);
+  ctx.strokeStyle = '#1a1a1a';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  // Center mark at 0dB
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, centerAngle - 0.01, centerAngle + 0.01);
+  ctx.strokeStyle = '#444';
+  ctx.lineWidth = 4;
+  ctx.stroke();
+
+  // Value arc from center to current position
+  if (Math.abs(db) > 0.1) {
+    ctx.beginPath();
+    // db > 0: clockwise from center; db < 0: counter-clockwise from center
+    ctx.arc(cx, cy, r, centerAngle, angle, db < 0);
+    ctx.strokeStyle = arcColor;
+    ctx.lineWidth = 3;
+    ctx.stroke();
+  }
+
+  // Knob body
+  ctx.beginPath();
+  ctx.arc(cx, cy, r - 5, 0, Math.PI * 2);
+  ctx.fillStyle = '#1c1c1c';
+  ctx.fill();
+  ctx.strokeStyle = isKill ? '#d44e4e' : '#333';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Indicator dot
+  const dotR = r - 8;
+  const dx = cx + dotR * Math.cos(angle);
+  const dy = cy + dotR * Math.sin(angle);
+  ctx.beginPath();
+  ctx.arc(dx, dy, 2.5, 0, Math.PI * 2);
+  ctx.fillStyle = dotColor;
+  ctx.fill();
+}
+
+function setEqBand(id, band, db) {
+  db = Math.max(EQ_MIN, Math.min(EQ_MAX, db));
+  knobState[`${id}-${band}`] = db;
+
+  // Audio
+  if (decks[id].filters) {
+    const b = decks[id].filters[band];
+    const isKill = db <= EQ_MIN;
+    b.kill.gain.value  = isKill ? 0 : 1;
+    b.boost.gain.value = isKill ? 0 : db;
+  }
+
+  // Draw knob
+  const canvas = document.getElementById(`deck-${id}-${band}`);
+  if (canvas) drawKnob(canvas, db, id);
+
+  // Label
+  const valEl = document.getElementById(`deck-${id}-${band}-val`);
+  if (valEl) {
+    const isKill = db <= EQ_MIN;
+    valEl.textContent = isKill ? 'kill' : db === 0 ? '0' : db > 0 ? '+' + db : String(db);
+    valEl.style.color = isKill ? '#d44e4e' : db !== 0 ? 'var(--text)' : 'var(--t2)';
+  }
+}
+
+function initKnob(canvas, id, band) {
+  let startY = null, startDb = null;
+  knobState[`${id}-${band}`] = 0;
+  drawKnob(canvas, 0, id);
+
+  function onMove(clientY) {
+    const dy = startY - clientY; // up = positive
+    const sensitivity = 0.15;   // dB per pixel
+    const db = Math.round((startDb + dy * sensitivity) * 2) / 2; // snap to 0.5
+    setEqBand(id, band, db);
+  }
+
+  canvas.addEventListener('mousedown', e => {
+    startY = e.clientY;
+    startDb = knobState[`${id}-${band}`] ?? 0;
+    e.preventDefault();
+    const onUp   = () => { startY = null; window.removeEventListener('mousemove', onMv); window.removeEventListener('mouseup', onUp); };
+    const onMv   = e => { if (startY !== null) onMove(e.clientY); };
+    window.addEventListener('mousemove', onMv);
+    window.addEventListener('mouseup', onUp);
   });
-  _audio.addEventListener('timeupdate', () => {
-    const pct = _audio.duration ? (_audio.currentTime / _audio.duration) * 100 : 0;
+
+  canvas.addEventListener('touchstart', e => {
+    startY = e.touches[0].clientY;
+    startDb = knobState[`${id}-${band}`] ?? 0;
+    e.preventDefault();
+  }, { passive: false });
+  canvas.addEventListener('touchmove', e => {
+    if (startY !== null) onMove(e.touches[0].clientY);
+    e.preventDefault();
+  }, { passive: false });
+  canvas.addEventListener('touchend', () => { startY = null; });
+
+  canvas.addEventListener('dblclick', () => setEqBand(id, band, 0));
+}
+
+// Crossfader: 0 = full A, 100 = full B, 50 = center (equal)
+function xfaderVal() { return parseInt(document.getElementById('xfader').value, 10); }
+
+function deckVolumes(xf) {
+  // Equal-power crossfade curve
+  const t = xf / 100;
+  return {
+    a: Math.cos(t * Math.PI / 2),
+    b: Math.cos((1 - t) * Math.PI / 2),
+  };
+}
+
+// Tracks which decks were paused by the crossfader reaching a hard cut.
+// We only auto-resume decks that WE paused, not decks the user paused manually.
+const xfPaused = { a: false, b: false };
+
+function setDeckPlayUI(id, playing) {
+  const btn = document.getElementById(`deck-${id}-play`);
+  if (!btn) return;
+  btn.textContent = playing ? '■' : '▶';
+  btn.classList.toggle('playing', playing);
+}
+
+function applyXfader() {
+  const xf = xfaderVal();
+  const v = deckVolumes(xf);
+  const volA = parseFloat(document.getElementById('deck-a-vol').value);
+  const volB = parseFloat(document.getElementById('deck-b-vol').value);
+
+  // Hard-cut thresholds: xf=0 → full A (cut B), xf=100 → full B (cut A)
+  const cutB = xf === 0;
+  const cutA = xf === 100;
+
+  // Deck A
+  if (decks.a.audio) {
+    decks.a.audio.volume = v.a * volA;
+    if (cutA && !decks.a.audio.paused) {
+      decks.a.audio.pause();
+      xfPaused.a = true;
+      setDeckPlayUI('a', false);
+    } else if (!cutA && xfPaused.a && decks.a.audio.paused) {
+      decks.a.audio.play().catch(() => {});
+      xfPaused.a = false;
+      setDeckPlayUI('a', true);
+    }
+  }
+
+  // Deck B
+  if (decks.b.audio) {
+    decks.b.audio.volume = v.b * volB;
+    if (cutB && !decks.b.audio.paused) {
+      decks.b.audio.pause();
+      xfPaused.b = true;
+      setDeckPlayUI('b', false);
+    } else if (!cutB && xfPaused.b && decks.b.audio.paused) {
+      decks.b.audio.play().catch(() => {});
+      xfPaused.b = false;
+      setDeckPlayUI('b', true);
+    }
+  }
+}
+
+function updateBpmDisplay(id) {
+  const d = decks[id];
+  const bpmEl  = document.getElementById(`deck-${id}-bpm`);
+  const syncBtn = document.getElementById(`deck-${id}-sync`);
+  const rstBtn  = document.getElementById(`deck-${id}-reset`);
+  if (!d.bpm) {
+    bpmEl.classList.add('hidden');
+    syncBtn.classList.add('hidden');
+    rstBtn.classList.add('hidden');
+    return;
+  }
+  const effectiveBpm = d.bpm * (d.audio ? d.audio.playbackRate : 1);
+  const isSynced = d.audio && Math.abs(d.audio.playbackRate - 1) > 0.001;
+  bpmEl.classList.remove('hidden');
+  bpmEl.textContent = effectiveBpm.toFixed(1);
+  bpmEl.classList.toggle('synced', isSynced);
+  syncBtn.classList.remove('hidden');
+  rstBtn.classList.remove('hidden');
+  rstBtn.classList.toggle('active', isSynced);
+}
+
+function syncDeck(id) {
+  const otherId = id === 'a' ? 'b' : 'a';
+  const d = decks[id];
+  const other = decks[otherId];
+  if (!d.audio || !d.bpm || !other.bpm) return;
+  const targetBpm = other.bpm * (other.audio ? other.audio.playbackRate : 1);
+  d.audio.playbackRate = targetBpm / d.bpm;
+  const tempoEl = document.getElementById(`deck-${id}-tempo`);
+  if (tempoEl) tempoEl.value = d.audio.playbackRate;
+  updateBpmDisplay(id);
+}
+
+function resetDeckBpm(id) {
+  const d = decks[id];
+  if (!d.audio) return;
+  d.audio.playbackRate = 1;
+  const tempoEl = document.getElementById(`deck-${id}-tempo`);
+  if (tempoEl) tempoEl.value = '1';
+  updateBpmDisplay(id);
+}
+
+function loadDeck(id, src, title, artist, bpm) {
+  const d = decks[id];
+
+  // Stop previous and reset its UI
+  if (d.audio) {
+    d.audio.pause();
+    d.audio.src = '';
+    setDeckPlayUI(id, false);
+  }
+  // New track loaded manually — clear xfader-pause state for this deck
+  xfPaused[id] = false;
+  d.bpm = bpm || null;
+
+  d.audio = new Audio();
+  d.audio.preload = 'auto';
+  d.audio.src = src;
+  d.src = src;
+
+  // Resume AudioContext if suspended (browser autoplay policy)
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+
+  // Build Web Audio chain: source → lo → mid → hi → gain → out
+  buildAudioChain(d.audio, id);
+
+  // Reset EQ sliders and filters to 0 dB
+  ['hi', 'mid', 'lo'].forEach(band => {
+    const sl = document.getElementById(`deck-${id}-${band}`);
+    if (sl) sl.value = '0';
+    setEqBand(id, band, 0);
+  });
+
+  // Apply current xfader volume immediately
+  applyXfader();
+
+  // UI elements
+  const playBtn = document.getElementById(`deck-${id}-play`);
+  const fill    = document.getElementById(`deck-${id}-fill`);
+  const prog    = document.getElementById(`deck-${id}-prog`);
+  const timeEl  = document.getElementById(`deck-${id}-time`);
+  const titleEl = document.getElementById(`deck-${id}-title`);
+  const artistEl= document.getElementById(`deck-${id}-artist`);
+  const emptyEl = document.getElementById(`deck-${id}-empty`);
+  const volEl   = document.getElementById(`deck-${id}-vol`);
+
+  // Show track info
+  emptyEl.classList.add('hidden');
+  titleEl.classList.remove('hidden');
+  titleEl.textContent = title;
+  if (artist) { artistEl.classList.remove('hidden'); artistEl.textContent = artist; }
+  else        { artistEl.classList.add('hidden'); }
+
+  d.audio.addEventListener('timeupdate', () => {
+    const pct = d.audio.duration ? (d.audio.currentTime / d.audio.duration) * 100 : 0;
     fill.style.width = pct + '%';
-    curEl.textContent = fmtTime(_audio.currentTime);
-    if (_audio.duration) durEl.textContent = '-' + fmtTime(_audio.duration - _audio.currentTime);
+    timeEl.textContent = fmtTime(d.audio.currentTime);
   });
-  _audio.addEventListener('ended', () => {
-    btn.textContent = '▶';
+  d.audio.addEventListener('ended', () => {
+    playBtn.textContent = '▶';
+    playBtn.classList.remove('playing');
     fill.style.width = '0%';
-    curEl.textContent = '0:00';
-    durEl.textContent = '-' + fmtTime(_audio.duration);
   });
 
-  btn.addEventListener('click', () => {
-    if (_audio.paused) { _audio.play(); btn.textContent = '■'; }
-    else               { _audio.pause(); btn.textContent = '▶'; }
+  // Detach old listeners by replacing element clone trick isn't needed —
+  // new audio object each time, old ones are GC'd. Just rebind play btn.
+  const newPlay = playBtn.cloneNode(true);
+  playBtn.parentNode.replaceChild(newPlay, playBtn);
+  newPlay.addEventListener('click', () => {
+    if (d.audio.paused) {
+      d.audio.play();
+      newPlay.textContent = '■'; newPlay.classList.add('playing');
+    } else {
+      d.audio.pause();
+      newPlay.textContent = '▶'; newPlay.classList.remove('playing');
+      // User manually paused — don't auto-resume on xfader move
+      xfPaused[id] = false;
+    }
   });
 
-  prog.addEventListener('click', e => {
-    if (!_audio.duration) return;
+  prog.onclick = e => {
+    if (!d.audio.duration) return;
     const r = prog.getBoundingClientRect();
-    _audio.currentTime = ((e.clientX - r.left) / r.width) * _audio.duration;
+    d.audio.currentTime = ((e.clientX - r.left) / r.width) * d.audio.duration;
+  };
+
+  volEl.oninput = () => applyXfader();
+
+  // BPM / SYNC / RST / tempo
+  const tempoEl = document.getElementById(`deck-${id}-tempo`);
+  const syncBtn = document.getElementById(`deck-${id}-sync`);
+  const rstBtn  = document.getElementById(`deck-${id}-reset`);
+
+  tempoEl.value = '1';
+  tempoEl.classList.toggle('hidden', !d.bpm);
+  syncBtn.classList.toggle('hidden', !d.bpm);
+  rstBtn.classList.toggle('hidden', !d.bpm);
+  updateBpmDisplay(id);
+
+  tempoEl.oninput = () => {
+    if (!d.audio) return;
+    d.audio.playbackRate = parseFloat(tempoEl.value);
+    updateBpmDisplay(id);
+  };
+
+  syncBtn.onclick = () => syncDeck(id);
+
+  rstBtn.onclick = () => {
+    resetDeckBpm(id);
+    tempoEl.value = '1';
+  };
+
+  // EQ knobs — init (attaches drag listeners) and reset to 0
+  ['hi', 'mid', 'lo'].forEach(band => {
+    const canvas = document.getElementById(`deck-${id}-${band}`);
+    if (canvas) {
+      initKnob(canvas, id, band);
+      setEqBand(id, band, 0);
+    }
   });
 
-  vol.addEventListener('input', () => { _audio.volume = parseFloat(vol.value); });
+  // Don't auto-play — user presses play in the mixer
+}
+
+function updateAssignButtons(trackId) {
+  // Mark [A]/[B] buttons for the currently viewed track as assigned or not
+  const assign = document.querySelector('.d-assign');
+  if (!assign || assign.dataset.trackId !== trackId) return;
+  assign.querySelectorAll('.d-assign-btn').forEach(btn => {
+    const deck = decks[btn.dataset.deck];
+    const isCurrent = deck.src && new URL(deck.src, location.href).pathname === new URL(assign.dataset.src, location.href).pathname;
+    btn.classList.toggle('assigned', isCurrent);
+  });
 }
 
 function showDetail(p) {
@@ -641,7 +1285,21 @@ function showDetail(p) {
   const dc = document.getElementById('detail-content');
   dc.classList.remove('hidden');
   dc.innerHTML = renderDetail(p);
-  initPlayer(dc.querySelector('.d-player'));
+
+  // Bind assign buttons
+  dc.querySelectorAll('.d-assign-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const assign = btn.closest('.d-assign');
+      const src    = assign.dataset.src;
+      const id     = btn.dataset.deck;
+      const title  = p.title || p.track_id;
+      const artist = p.artist || null;
+      loadDeck(id, src, title, artist, p.bpm || null);
+      updateAssignButtons(p.track_id);
+    });
+  });
+  updateAssignButtons(p.track_id);
+
   if (isMobile()) {
     document.getElementById('tracks').classList.add('detail-open');
     document.getElementById('back-btn').classList.remove('hidden');
@@ -654,6 +1312,9 @@ function closeDetail() {
   document.getElementById('tracks').classList.remove('detail-open');
   document.getElementById('back-btn').classList.add('hidden');
   document.getElementById('lib-crumb').classList.remove('hidden');
+  selected = null;
+  // Re-render so selected highlight clears and all rows are clickable fresh
+  render();
 }
 
 // ── Col header sort ──
@@ -786,18 +1447,30 @@ function enterLibrary(name, ps) {
   document.getElementById('search').value = '';
   document.getElementById('picker').classList.add('hidden');
   document.getElementById('tracks').classList.remove('hidden');
+  document.getElementById('mixer').classList.remove('hidden');
   document.getElementById('search').classList.remove('hidden');
   document.getElementById('stats').classList.remove('hidden');
   document.getElementById('lib-crumb').classList.remove('hidden');
   document.getElementById('lib-crumb-name').textContent = name;
   document.getElementById('detail-empty').classList.remove('hidden');
   document.getElementById('detail-content').classList.add('hidden');
+  // Re-draw knobs now that mixer is visible (canvas dimensions resolve after display)
+  ['a', 'b'].forEach(id => {
+    ['hi', 'mid', 'lo'].forEach(band => {
+      const canvas = document.getElementById(`deck-${id}-${band}`);
+      if (canvas) drawKnob(canvas, knobState[`${id}-${band}`] ?? 0, id);
+    });
+  });
   render();
 }
 
 function showPicker() {
-  if (_audio) { _audio.pause(); _audio.src = ''; _audio = null; }
+  // Stop both decks
+  ['a','b'].forEach(id => {
+    if (decks[id].audio) { decks[id].audio.pause(); decks[id].audio.src = ''; decks[id].audio = null; decks[id].src = null; }
+  });
   document.getElementById('tracks').classList.add('hidden');
+  document.getElementById('mixer').classList.add('hidden');
   document.getElementById('search').classList.add('hidden');
   document.getElementById('stats').classList.add('hidden');
   document.getElementById('lib-crumb').classList.add('hidden');
@@ -828,6 +1501,138 @@ document.getElementById('search').addEventListener('input', e => {
 document.getElementById('change-lib').addEventListener('click', showPicker);
 document.getElementById('back-btn').addEventListener('click', closeDetail);
 document.getElementById('lib-search').addEventListener('input', e => renderLibList(e.target.value));
+
+
+// ── Mixer controls ──
+document.getElementById('xfader').addEventListener('input', applyXfader);
+document.getElementById('xfader-reset').addEventListener('click', () => {
+  document.getElementById('xfader').value = 50;
+  applyXfader();
+});
+
+// Init knobs on page load (so they draw before any track is loaded)
+['a', 'b'].forEach(id => {
+  ['hi', 'mid', 'lo'].forEach(band => {
+    const canvas = document.getElementById(`deck-${id}-${band}`);
+    if (canvas) initKnob(canvas, id, band);
+  });
+});
+
+// ── Mobile EQ/Tempo modal ──
+let modalDeckId = null;
+
+// Modal EQ knobs (larger, 52px) — mirror changes to deck's real knobs
+function initModalKnob(canvas, band) {
+  let startY = null, startDb = null;
+  function onMove(clientY) {
+    const dy = startY - clientY;
+    const db = Math.round((startDb + dy * 0.20) * 2) / 2;
+    // Update the actual deck band
+    if (modalDeckId) setEqBand(modalDeckId, band, db);
+    // Sync modal display
+    syncModalToDecks();
+  }
+  canvas.addEventListener('mousedown', e => {
+    startY = e.clientY; startDb = modalDeckId ? (knobState[`${modalDeckId}-${band}`] ?? 0) : 0;
+    e.preventDefault();
+    const up = () => { startY = null; window.removeEventListener('mousemove', mv); window.removeEventListener('mouseup', up); };
+    const mv = e => { if (startY !== null) onMove(e.clientY); };
+    window.addEventListener('mousemove', mv); window.addEventListener('mouseup', up);
+  });
+  canvas.addEventListener('touchstart', e => {
+    startY = e.touches[0].clientY; startDb = modalDeckId ? (knobState[`${modalDeckId}-${band}`] ?? 0) : 0;
+    e.preventDefault();
+  }, { passive: false });
+  canvas.addEventListener('touchmove', e => {
+    if (startY !== null) onMove(e.touches[0].clientY); e.preventDefault();
+  }, { passive: false });
+  canvas.addEventListener('touchend', () => { startY = null; });
+  canvas.addEventListener('dblclick', () => { if (modalDeckId) setEqBand(modalDeckId, band, 0); syncModalToDecks(); });
+}
+
+function syncModalToDecks() {
+  if (!modalDeckId) return;
+  ['hi', 'mid', 'lo'].forEach(band => {
+    const db = knobState[`${modalDeckId}-${band}`] ?? 0;
+    const canvas = document.getElementById(`modal-${band}`);
+    if (canvas) drawKnob(canvas, db, modalDeckId);
+    const valEl = document.getElementById(`modal-${band}-val`);
+    if (valEl) {
+      const isKill = db <= EQ_MIN;
+      valEl.textContent = isKill ? 'kill' : db === 0 ? '0' : db > 0 ? '+' + db : String(db);
+      valEl.style.color = isKill ? '#d44e4e' : db !== 0 ? 'var(--text)' : 'var(--t2)';
+    }
+  });
+  // BPM display
+  const d = decks[modalDeckId];
+  const bpmEl = document.getElementById('deck-modal-bpm');
+  if (d.bpm && d.audio) {
+    const eff = (d.bpm * d.audio.playbackRate).toFixed(1);
+    bpmEl.textContent = eff;
+    bpmEl.style.color = Math.abs(d.audio.playbackRate - 1) > 0.001 ? 'var(--accent)' : 'var(--t2)';
+  } else {
+    bpmEl.textContent = '—'; bpmEl.style.color = 'var(--t2)';
+  }
+  // Tempo slider
+  const sl = document.getElementById('deck-modal-tempo-slider');
+  if (d.audio) sl.value = d.audio.playbackRate; else sl.value = 1;
+  // Sync/rst buttons
+  const hasOtherBpm = decks[modalDeckId === 'a' ? 'b' : 'a'].bpm != null;
+  document.getElementById('deck-modal-sync').disabled = !d.bpm || !hasOtherBpm;
+  document.getElementById('deck-modal-rst').disabled = !d.audio;
+}
+
+function openDeckModal(id) {
+  modalDeckId = id;
+  const overlay = document.getElementById('deck-modal-overlay');
+  const label = id === 'a' ? 'A' : 'B';
+  document.getElementById('deck-modal-title').textContent = `Deck ${label} — EQ & Tempo`;
+  document.getElementById('deck-modal-title').style.color = id === 'a' ? '#4e9fd4' : '#c47ed4';
+  syncModalToDecks();
+  overlay.classList.add('open');
+}
+
+function closeDeckModal() {
+  document.getElementById('deck-modal-overlay').classList.remove('open');
+  modalDeckId = null;
+}
+
+// init modal knobs
+['hi', 'mid', 'lo'].forEach(band => {
+  const canvas = document.getElementById(`modal-${band}`);
+  if (canvas) initModalKnob(canvas, band);
+});
+
+document.getElementById('deck-modal-close').addEventListener('click', closeDeckModal);
+document.getElementById('deck-modal-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('deck-modal-overlay')) closeDeckModal();
+});
+
+document.getElementById('deck-modal-tempo-slider').addEventListener('input', e => {
+  if (!modalDeckId || !decks[modalDeckId].audio) return;
+  decks[modalDeckId].audio.playbackRate = parseFloat(e.target.value);
+  // Also update the real deck's tempo slider for consistency
+  const realTempo = document.getElementById(`deck-${modalDeckId}-tempo`);
+  if (realTempo) realTempo.value = e.target.value;
+  updateBpmDisplay(modalDeckId);
+  syncModalToDecks();
+});
+
+document.getElementById('deck-modal-sync').addEventListener('click', () => {
+  if (!modalDeckId) return;
+  syncDeck(modalDeckId);
+  syncModalToDecks();
+});
+
+document.getElementById('deck-modal-rst').addEventListener('click', () => {
+  if (!modalDeckId) return;
+  resetDeckBpm(modalDeckId);
+  syncModalToDecks();
+});
+
+// Gear buttons
+document.getElementById('deck-a-settings').addEventListener('click', () => openDeckModal('a'));
+document.getElementById('deck-b-settings').addEventListener('click', () => openDeckModal('b'));
 
 updateColHeaders();
 loadLibraries();
