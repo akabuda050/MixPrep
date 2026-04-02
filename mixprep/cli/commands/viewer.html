@@ -282,6 +282,9 @@ body{background:var(--bg);color:var(--text);font:13px/1.5 'Inter',system-ui,sans
 .track-row:hover{background:var(--s2)}
 .track-row.selected{background:var(--s3);border-left:2px solid var(--accent)}
 .track-row.selected .tr-artist,.track-row.selected .tr-title{color:var(--text)}
+.track-row.deck-a-loaded{border-left:2px solid #4e9fd4;background:rgba(78,159,212,.06)}
+.track-row.deck-b-loaded{border-right:2px solid #c47ed4;background:rgba(196,126,212,.06)}
+.track-row.deck-a-loaded.deck-b-loaded{border-left:2px solid #4e9fd4;border-right:2px solid #c47ed4;background:rgba(78,159,212,.06)}
 
 .tr-identity{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:1px;padding-right:10px}
 .tr-title{font-size:12px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2}
@@ -840,6 +843,8 @@ function render() {
     if (row.dataset.id === selected) row.classList.add('selected');
   });
 
+  updateTrackListHighlight();
+
   const lmr = document.getElementById('load-more-row');
   if (remaining > 0) {
     lmr.classList.remove('hidden');
@@ -1297,6 +1302,17 @@ function loadDeck(id, src, title, artist, bpm) {
   });
 
   // Don't auto-play — user presses play in the mixer
+  updateTrackListHighlight();
+}
+
+function updateTrackListHighlight() {
+  const trackIdA = decks.a.src ? new URL(decks.a.src, location.href).pathname.split('/').pop() : null;
+  const trackIdB = decks.b.src ? new URL(decks.b.src, location.href).pathname.split('/').pop() : null;
+  document.querySelectorAll('.track-row').forEach(row => {
+    const id = decodeURIComponent(row.dataset.id);
+    row.classList.toggle('deck-a-loaded', trackIdA ? decodeURIComponent(trackIdA) === id : false);
+    row.classList.toggle('deck-b-loaded', trackIdB ? decodeURIComponent(trackIdB) === id : false);
+  });
 }
 
 function updateAssignButtons(trackId) {
