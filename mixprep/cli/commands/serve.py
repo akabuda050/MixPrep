@@ -1,5 +1,11 @@
 """
 Serve command — minimal HTTP server for the profile viewer.
+
+Routes:
+  GET /                  → viewer.html
+  GET /index.html        → viewer.html
+  GET /api/libraries     → list of available library names
+  GET /api/profiles/<lib> → list of track profiles for <lib>
 """
 
 from __future__ import annotations
@@ -15,15 +21,18 @@ console = Console()
 _VIEWER_HTML = Path(__file__).parent / "viewer.html"
 
 
-def _make_handler(lib_dir: Path) -> type:
-    """Return a handler class with library_dir baked in."""
+def _make_handler(data_base: Path) -> type:
+    """Return a handler class with data_base baked in."""
 
     class _Handler(http.server.BaseHTTPRequestHandler):
         def do_GET(self) -> None:  # noqa: N802
             if self.path in ("/", "/index.html"):
                 self._serve_file(_VIEWER_HTML, "text/html; charset=utf-8")
-            elif self.path == "/api/profiles":
-                self._serve_profiles()
+            elif self.path == "/api/libraries":
+                self._serve_libraries()
+            elif self.path.startswith("/api/profiles/"):
+                lib = self.path[len("/api/profiles/") :]
+                self._serve_profiles(lib)
             else:
                 self.send_error(404)
 
@@ -38,8 +47,21 @@ def _make_handler(lib_dir: Path) -> type:
             self.end_headers()
             self.wfile.write(data)
 
-        def _serve_profiles(self) -> None:
-            profiles_dir = lib_dir / "profiles"
+        def _serve_libraries(self) -> None:
+            libs_root = data_base / "libraries"
+            names: list[str] = []
+            if libs_root.is_dir():
+                for d in sorted(libs_root.iterdir()):
+                    if d.is_dir() and (d / "profiles").is_dir():
+                        names.append(d.name)
+            self._send_json(names)
+
+        def _serve_profiles(self, library: str) -> None:
+            # Basic path traversal guard
+            if not library or "/" in library or "\\" in library or ".." in library.split("/"):
+                self.send_error(400)
+                return
+            profiles_dir = data_base / "libraries" / library / "profiles"
             items = []
             if profiles_dir.is_dir():
                 for f in sorted(profiles_dir.glob("*.json")):
@@ -63,25 +85,19 @@ def _make_handler(lib_dir: Path) -> type:
     return _Handler
 
 
-def run_serve(library: str, port: int) -> None:
-    from mixprep.models.cache import data_dir
+def run_serve(port: int) -> None:
+    from mixprep.models.cache import _resolve_base, _xdg_data_home
 
-    lib_dir = data_dir(library)
-    if not lib_dir.is_dir():
-        console.print(
-            f"[red]Library {library!r} not found.[/red] "
-            f"Run [bold]mixprep scan --library {library}[/bold] first."
-        )
-        raise SystemExit(1)
+    data_base = _resolve_base("MIXPREP_DATA_DIR", _xdg_data_home() / "mixprep" / "data")
 
     if not _VIEWER_HTML.exists():
         console.print(f"[red]Viewer not found:[/red] {_VIEWER_HTML}")
         raise SystemExit(1)
 
-    handler = _make_handler(lib_dir)
+    handler = _make_handler(data_base)
     server = http.server.HTTPServer(("0.0.0.0", port), handler)
 
-    console.print(f"Serving [bold]{library}[/bold] at [link]http://127.0.0.1:{port}[/link]")
+    console.print(f"MixPrep viewer at [link]http://127.0.0.1:{port}[/link]")
     console.print("Press [bold]Ctrl+C[/bold] to stop.")
 
     try:

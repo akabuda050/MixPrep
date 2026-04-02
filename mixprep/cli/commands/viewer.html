@@ -3,502 +3,723 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MixPrep Library</title>
+<title>MixPrep</title>
 <style>
-  :root {
-    --bg:      #0d0d0d;
-    --surface: #141414;
-    --surface2:#1c1c1c;
-    --border:  #282828;
-    --accent:  #d4a843;
-    --accent2: #5fc4c4;
-    --text:    #e0e0e0;
-    --muted:   #555;
-    --green:   #5ecf8a;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Inter', system-ui, sans-serif;
-    font-size: 13px;
-    line-height: 1.4;
-  }
+:root {
+  --bg:      #0c0c0c;
+  --s1:      #111;
+  --s2:      #161616;
+  --s3:      #1c1c1c;
+  --b1:      #202020;
+  --b2:      #2a2a2a;
+  --accent:  #e8b84b;
+  --acc-d:   rgba(232,184,75,.10);
+  --teal:    #4ec9b0;
+  --text:    #d0d0d0;
+  --t2:      #777;
+  --t3:      #3a3a3a;
+  --green:   #4ecf82;
+  --r:       6px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font:13px/1.5 'Inter',system-ui,sans-serif;height:100vh;overflow:hidden;display:flex;flex-direction:column}
 
-  /* ── Header ── */
-  header {
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    padding: 10px 16px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    position: sticky;
-    top: 0;
-    z-index: 30;
-  }
-  header h1 {
-    font-size: 13px;
-    font-weight: 800;
-    letter-spacing: 0.14em;
-    color: var(--accent);
-    text-transform: uppercase;
-    flex-shrink: 0;
-  }
-  #search {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 5px;
-    color: var(--text);
-    padding: 5px 10px;
-    font-size: 12px;
-    flex: 1;
-    min-width: 0;
-    outline: none;
-    transition: border-color 0.15s;
-  }
-  #search:focus { border-color: var(--accent); }
-  #search::placeholder { color: var(--muted); }
-  #stats { color: var(--muted); font-size: 11px; flex-shrink: 0; white-space: nowrap; }
+/* ─── topbar ─── */
+#topbar{
+  height:46px;min-height:46px;
+  background:var(--s1);border-bottom:1px solid var(--b1);
+  display:flex;align-items:center;gap:12px;padding:0 16px;
+  flex-shrink:0;z-index:40;
+}
+#logo{font-size:11px;font-weight:800;letter-spacing:.18em;color:var(--accent);text-transform:uppercase;flex-shrink:0}
+#lib-crumb{display:flex;align-items:center;gap:6px;flex-shrink:0}
+#lib-crumb-sep{color:var(--t3);font-size:14px}
+#lib-crumb-name{font-size:12px;font-weight:600;color:var(--text)}
+#change-lib{background:none;border:1px solid var(--b2);border-radius:4px;color:var(--t2);cursor:pointer;font-size:10px;padding:2px 8px;text-transform:uppercase;letter-spacing:.05em;transition:all .12s}
+#change-lib:hover{border-color:var(--accent);color:var(--accent)}
+#search{background:var(--s2);border:1px solid var(--b1);border-radius:5px;color:var(--text);padding:5px 11px;font-size:12px;flex:1;min-width:0;outline:none;transition:border-color .15s}
+#search:focus{border-color:var(--accent)}
+#search::placeholder{color:var(--t3)}
+#stats{color:var(--t2);font-size:11px;flex-shrink:0;white-space:nowrap}
 
-  /* ── Sort bar ── */
-  #sort-bar {
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    padding: 6px 16px;
-    display: flex;
-    gap: 5px;
-    align-items: center;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-  }
-  #sort-bar::-webkit-scrollbar { display: none; }
-  #sort-bar label {
-    color: var(--muted);
-    font-size: 9px;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    flex-shrink: 0;
-    margin-right: 3px;
-  }
-  .sort-btn {
-    background: transparent;
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    color: var(--muted);
-    cursor: pointer;
-    font-size: 9px;
-    padding: 3px 8px;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    white-space: nowrap;
-    flex-shrink: 0;
-    transition: all 0.12s;
-  }
-  .sort-btn:hover { border-color: var(--accent); color: var(--accent); }
-  .sort-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(212,168,67,0.08); }
+/* ─── screens ─── */
+.screen{flex:1;overflow:hidden;display:flex;flex-direction:column}
+.hidden{display:none!important}
 
-  /* ── Grid ── */
-  #grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 1px;
-    background: var(--border);
-  }
-  @media (max-width: 400px) {
-    #grid { grid-template-columns: 1fr; }
-  }
+/* ─── library picker — split ─── */
+#picker{flex-direction:row;overflow:hidden}
 
-  /* ── Card ── */
-  .card {
-    background: var(--surface);
-    display: flex;
-    flex-direction: column;
-  }
-  .card:hover { background: var(--surface2); }
+/* left: library list */
+#lib-panel{
+  display:flex;flex-direction:column;
+  width:280px;min-width:200px;flex-shrink:0;
+  border-right:1px solid var(--b1);overflow:hidden;
+}
+#lib-panel-bar{
+  display:flex;align-items:center;
+  background:var(--s1);border-bottom:1px solid var(--b1);
+  padding:0 12px;height:34px;flex-shrink:0;
+}
+#lib-panel-bar span{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--t2)}
+#lib-search{
+  background:var(--s2);border:none;border-bottom:1px solid var(--b1);
+  color:var(--text);padding:8px 14px;font-size:12px;
+  width:100%;outline:none;flex-shrink:0;
+}
+#lib-search::placeholder{color:var(--t3)}
+#lib-list{overflow-y:auto;flex:1}
+.lib-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 14px;border-bottom:1px solid var(--b1);
+  cursor:pointer;transition:background .08s;gap:8px;
+}
+.lib-row:hover{background:var(--s2)}
+.lib-row.selected{background:var(--s3);border-left:2px solid var(--accent)}
+.lib-row-name{font-size:12px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lib-row-count{font-size:10px;color:var(--t2);flex-shrink:0}
+#picker-empty{color:var(--t2);text-align:center;padding:40px 14px;line-height:1.8;font-size:12px}
+#picker-empty code{color:var(--accent);font-family:'SF Mono','Fira Code',monospace;font-size:11px}
 
-  /* Card section = visually separated block */
-  .card-section {
-    padding: 14px 16px;
-    border-bottom: 1px solid var(--border);
-  }
-  .card-section:last-child { border-bottom: none; }
+/* right: library detail */
+#lib-detail{flex:1;min-width:0;overflow-y:auto;background:var(--bg)}
+#lib-detail-empty{
+  display:flex;align-items:center;justify-content:center;
+  height:100%;color:var(--t3);font-size:13px;
+}
+#lib-detail-content{padding:28px;display:flex;flex-direction:column;gap:20px}
+.ld-name{font-size:22px;font-weight:700;color:var(--text)}
+.ld-chips{display:flex;gap:10px;flex-wrap:wrap}
+.ld-chip{
+  background:var(--s1);border:1px solid var(--b1);border-radius:5px;
+  padding:8px 14px;display:flex;flex-direction:column;gap:3px;min-width:80px;
+}
+.ld-chip-label{font-size:9px;color:var(--t2);text-transform:uppercase;letter-spacing:.1em}
+.ld-chip-val{font-size:16px;font-weight:700;color:var(--text);line-height:1}
+.ld-section{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:16px}
+.ld-section-title{font-size:9px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.12em;margin-bottom:12px}
+.ld-genres{display:flex;flex-wrap:wrap;gap:6px}
+.ld-genre{background:rgba(80,90,200,.12);border:1px solid rgba(80,90,200,.2);border-radius:4px;color:#8898d8;font-size:11px;font-weight:500;padding:3px 10px}
+.ld-keys{display:flex;flex-wrap:wrap;gap:6px}
+.browse-btn{
+  align-self:flex-start;
+  background:var(--accent);border:none;border-radius:6px;
+  color:#000;cursor:pointer;font-size:12px;font-weight:700;
+  padding:10px 24px;letter-spacing:.04em;
+  transition:opacity .12s;
+}
+.browse-btn:hover{opacity:.85}
 
-  /* ── Identity ── */
-  .card-title {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .card-artist {
-    font-size: 11px;
-    color: var(--accent2);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    margin-top: 2px;
-  }
+/* ─── tracks view: split ─── */
+#tracks{flex-direction:row;overflow:hidden}
 
-  /* ── Meta ── */
-  .meta-row { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 10px; }
-  .meta-item { display: flex; flex-direction: column; gap: 2px; }
-  .meta-label { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
-  .meta-value { font-size: 13px; font-weight: 700; color: var(--text); }
-  .camelot-badge {
-    display: inline-block;
-    background: rgba(94,207,138,0.1);
-    border: 1px solid rgba(94,207,138,0.28);
-    border-radius: 3px;
-    color: var(--green);
-    font-size: 12px;
-    font-weight: 700;
-    padding: 1px 7px;
-  }
+/* left: table */
+#table-wrap{
+  display:flex;flex-direction:column;
+  width:55%;min-width:320px;
+  border-right:1px solid var(--b1);
+  overflow:hidden;
+}
 
-  /* ── Section label ── */
-  .section-label {
-    font-size: 9px;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    margin-bottom: 9px;
-  }
+/* sort/column bar */
+#col-bar{
+  display:flex;align-items:stretch;
+  background:var(--s1);border-bottom:1px solid var(--b1);
+  flex-shrink:0;overflow-x:auto;scrollbar-width:none;
+}
+#col-bar::-webkit-scrollbar{display:none}
+.col-hdr{
+  background:none;border:none;border-right:1px solid var(--b1);
+  color:var(--t2);cursor:pointer;font-size:10px;font-weight:600;
+  letter-spacing:.05em;text-transform:uppercase;padding-top:7px;padding-bottom:7px;
+  white-space:nowrap;flex-shrink:0;display:flex;align-items:center;
+  justify-content:flex-end;gap:4px;transition:color .12s;
+}
+.col-hdr.col-identity{justify-content:flex-start}
+.col-hdr:last-child{border-right:none}
+.col-hdr:hover{color:var(--text)}
+.col-hdr.active{color:var(--accent)}
+.col-hdr .arrow{font-size:9px;opacity:.7}
 
-  /* ── Scores ── */
-  .scores-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 7px 18px;
-  }
-  .score-row { display: flex; flex-direction: column; gap: 3px; }
-  .score-head { display: flex; justify-content: space-between; }
-  .score-name { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; }
-  .score-pct  { font-size: 10px; font-weight: 700; color: var(--text); }
-  .bar { background: var(--border); border-radius: 2px; height: 3px; overflow: hidden; }
-  .bar-fill { height: 100%; border-radius: 2px; }
+/* track list */
+#track-list{overflow-y:auto;flex:1}
+.track-row{
+  display:flex;align-items:center;
+  border-bottom:1px solid var(--b1);
+  cursor:pointer;padding:0 12px;height:40px;
+  transition:background .08s;gap:0;
+}
+.track-row:hover{background:var(--s2)}
+.track-row.selected{background:var(--s3);border-left:2px solid var(--accent)}
+.track-row.selected .tr-artist,.track-row.selected .tr-title{color:var(--text)}
 
-  /* ── Phases ── */
-  .phases-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 7px 18px;
-  }
+.tr-identity{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:1px;padding-right:10px}
+.tr-title{font-size:12px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2}
+.tr-artist{font-size:10px;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2}
 
-  /* ── Genres ── */
-  .genres { display: flex; flex-wrap: wrap; gap: 4px; }
-  .genre-tag {
-    background: rgba(80,80,160,0.15);
-    border: 1px solid rgba(80,80,160,0.28);
-    border-radius: 3px;
-    color: #8888cc;
-    font-size: 10px;
-    padding: 1px 6px;
-  }
+.tr-cell{font-size:11px;font-weight:600;color:var(--text);display:flex;align-items:center;justify-content:flex-end}
+.tr-cell.dim{color:var(--t2);font-weight:400}
+.camelot-sm{
+  display:inline-block;background:rgba(78,207,130,.09);border:1px solid rgba(78,207,130,.2);
+  border-radius:3px;color:var(--green);font-size:10px;font-weight:700;padding:0 5px;line-height:1.6;
+}
+.mini-bar-wrap{display:flex;flex-direction:column;justify-content:center}
+.mini-bar-wrap .mini-val{font-size:10px;font-weight:600;text-align:right}
+.mini-bar{background:var(--b1);border-radius:1px;height:3px;overflow:hidden;margin-top:3px}
+.mini-bar-fill{height:100%;border-radius:1px}
 
-  /* ── Empty/loading ── */
-  .msg {
-    color: var(--muted);
-    text-align: center;
-    padding: 80px 20px;
-    font-size: 13px;
-    grid-column: 1 / -1;
-  }
+/* shared column widths — same class on both col-hdr and track-row cells */
+.col-identity{flex:1;min-width:120px;padding-left:12px;padding-right:4px}
+.col-bpm    {width:68px;flex-shrink:0;box-sizing:border-box;padding:0 10px}
+.col-key    {width:62px;flex-shrink:0;box-sizing:border-box;padding:0 8px}
+.col-energy {width:80px;flex-shrink:0;box-sizing:border-box;padding:0 10px}
+.col-groove {width:80px;flex-shrink:0;box-sizing:border-box;padding:0 10px}
 
-  /* ── Pagination ── */
-  #pagination {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: 16px;
-    background: var(--surface);
-    border-top: 1px solid var(--border);
-  }
-  .page-btn {
-    background: transparent;
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    color: var(--muted);
-    cursor: pointer;
-    font-size: 11px;
-    min-width: 30px;
-    padding: 4px 8px;
-    text-align: center;
-    transition: all 0.12s;
-  }
-  .page-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
-  .page-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(212,168,67,0.1); }
-  .page-btn:disabled { opacity: 0.3; cursor: default; }
-  #page-info { color: var(--muted); font-size: 11px; padding: 0 6px; }
+#load-more-row{
+  padding:14px;text-align:center;border-top:1px solid var(--b1);
+  flex-shrink:0;
+}
+#load-more-row button{
+  background:none;border:1px solid var(--b2);border-radius:5px;color:var(--t2);
+  cursor:pointer;font-size:11px;padding:6px 22px;text-transform:uppercase;letter-spacing:.06em;transition:all .12s
+}
+#load-more-row button:hover{border-color:var(--accent);color:var(--accent)}
+#load-more-row .lm-count{color:var(--t3);font-size:10px;display:block;margin-top:4px}
+
+/* right: detail panel */
+#detail{
+  flex:1;min-width:0;overflow-y:auto;
+  background:var(--bg);
+}
+#detail-empty{
+  display:flex;align-items:center;justify-content:center;
+  height:100%;color:var(--t3);font-size:13px;
+}
+#detail-content{padding:24px;display:flex;flex-direction:column;gap:20px}
+
+.d-title{font-size:20px;font-weight:700;color:var(--text);line-height:1.2}
+.d-artist{font-size:13px;color:var(--teal);margin-top:4px}
+
+.d-meta{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+.d-chip{
+  background:var(--s1);border:1px solid var(--b1);border-radius:5px;
+  padding:8px 14px;display:flex;flex-direction:column;gap:4px;min-width:72px;
+}
+.d-chip-label{font-size:9px;color:var(--t2);text-transform:uppercase;letter-spacing:.1em}
+.d-chip-val{font-size:15px;font-weight:700;color:var(--text);line-height:1}
+
+.d-section-title{font-size:9px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.12em;margin-bottom:12px}
+.d-section{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:16px}
+
+.score-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 20px}
+.score-row{display:flex;flex-direction:column;gap:5px}
+.score-head{display:flex;justify-content:space-between;align-items:baseline}
+.score-name{font-size:10px;color:var(--t2);text-transform:uppercase;letter-spacing:.06em}
+.score-val{font-size:12px;font-weight:700;color:var(--text)}
+.bar{background:var(--b1);border-radius:2px;height:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:2px}
+
+.genres{display:flex;flex-wrap:wrap;gap:6px}
+.g-tag{background:rgba(80,90,200,.12);border:1px solid rgba(80,90,200,.2);border-radius:4px;color:#8898d8;font-size:11px;font-weight:500;padding:3px 10px}
+
+.msg-full{color:var(--t2);text-align:center;padding:60px 20px;font-size:13px}
+
+/* ─── mobile ─── */
+#back-btn{
+  display:none;background:none;border:none;color:var(--accent);
+  cursor:pointer;font-size:12px;font-weight:600;padding:0;
+  align-items:center;gap:5px;letter-spacing:.03em;flex-shrink:0;
+}
+#back-btn::before{content:'←';font-size:14px}
+@media(max-width:640px){
+  body{overflow:auto}
+  /* picker */
+  #picker{flex-direction:column}
+  #lib-panel{width:100%;border-right:none;border-bottom:1px solid var(--b1)}
+  #lib-detail{min-height:300px}
+  /* tracks */
+  #tracks{flex-direction:column}
+  #table-wrap{width:100%;border-right:none;border-bottom:1px solid var(--b1);min-width:0}
+  #detail{min-height:0}
+  #tracks.detail-open #table-wrap{display:none}
+  #tracks.detail-open #detail-empty{display:none}
+  #back-btn{display:flex}
+  #detail-content{padding:16px}
+  #lib-detail-content{padding:16px}
+  .score-grid{grid-template-columns:1fr}
+  .d-meta{gap:8px}
+}
 </style>
 </head>
 <body>
 
-<header>
-  <h1>MixPrep</h1>
-  <input id="search" type="text" placeholder="Search artist or title…">
-  <span id="stats"></span>
-</header>
-
-<div id="sort-bar">
-  <label>Sort</label>
-  <button class="sort-btn active" data-sort="artist">Artist</button>
-  <button class="sort-btn" data-sort="title">Title</button>
-  <button class="sort-btn" data-sort="bpm">BPM</button>
-  <button class="sort-btn" data-sort="energy">Energy</button>
-  <button class="sort-btn" data-sort="groove">Groove</button>
-  <button class="sort-btn" data-sort="danceability">Dance</button>
-  <button class="sort-btn" data-sort="arousal">Arousal</button>
-  <button class="sort-btn" data-sort="tonal">Tonal</button>
-  <button class="sort-btn" data-sort="timbre">Timbre</button>
-  <button class="sort-btn" data-sort="approachability">Approach</button>
-  <button class="sort-btn" data-sort="engagement">Engage</button>
-  <button class="sort-btn" data-sort="warmup">Warmup</button>
-  <button class="sort-btn" data-sort="build">Build</button>
-  <button class="sort-btn" data-sort="peak">Peak</button>
-  <button class="sort-btn" data-sort="reset">Reset</button>
-  <button class="sort-btn" data-sort="winddown">Wind-down</button>
+<!-- topbar -->
+<div id="topbar">
+  <span id="logo">MixPrep</span>
+  <button id="back-btn" class="hidden"></button>
+  <div id="lib-crumb" class="hidden">
+    <span id="lib-crumb-sep">›</span>
+    <span id="lib-crumb-name"></span>
+    <button id="change-lib">Change</button>
+  </div>
+  <input id="search" type="text" placeholder="Search artist or title…" class="hidden">
+  <span id="stats" class="hidden"></span>
 </div>
 
-<div id="grid"><div class="msg">Loading…</div></div>
-<div id="pagination"></div>
+<!-- library picker screen -->
+<div id="picker" class="screen">
+
+  <!-- left -->
+  <div id="lib-panel">
+    <div id="lib-panel-bar"><span>Libraries</span></div>
+    <input id="lib-search" type="text" placeholder="Filter…" class="hidden">
+    <div id="lib-list"><span class="msg-full">Loading…</span></div>
+  </div>
+
+  <!-- right -->
+  <div id="lib-detail">
+    <div id="lib-detail-empty">← Select a library</div>
+    <div id="lib-detail-content" class="hidden"></div>
+  </div>
+
+</div>
+
+<!-- tracks screen -->
+<div id="tracks" class="screen hidden">
+
+  <!-- left: table -->
+  <div id="table-wrap">
+    <div id="col-bar">
+      <button class="col-hdr col-identity active" data-sort="artist" title="Sort by artist / title">Track <span class="arrow"></span></button>
+      <button class="col-hdr col-bpm" data-sort="bpm" title="Beats per minute">BPM <span class="arrow"></span></button>
+      <button class="col-hdr col-key" data-sort="camelot" title="Camelot wheel key — harmonic mixing position">Key <span class="arrow"></span></button>
+      <button class="col-hdr col-energy" data-sort="energy" title="Overall intensity — how hard and exciting the track hits">Energy <span class="arrow"></span></button>
+      <button class="col-hdr col-groove" data-sort="groove" title="How much the track pulls you in and makes you move">Groove <span class="arrow"></span></button>
+    </div>
+    <div id="track-list"></div>
+    <div id="load-more-row" class="hidden"></div>
+  </div>
+
+  <!-- right: detail -->
+  <div id="detail">
+    <div id="detail-empty">← Select a track</div>
+    <div id="detail-content" class="hidden"></div>
+  </div>
+
+</div>
 
 <script>
-const PAGE_SIZE = 10;
-let profiles    = [];
-let sortKey     = 'artist';
-let query       = '';
-let currentPage = 0;
+const PAGE_SIZE = 50;
+let profiles  = [];
+let sortKey   = 'artist';
+let sortAsc   = true;
+let query     = '';
+let visible   = PAGE_SIZE;
+let selected  = null;
+
+// ── Camelot wheel sort position ──
+function camelotPos(c) {
+  if (!c) return -1;
+  const m = c.match(/^(\d+)([AB])$/i);
+  if (!m) return -1;
+  return (parseInt(m[1], 10) - 1) * 2 + (m[2].toUpperCase() === 'B' ? 1 : 0);
+}
 
 const SCORE_COLOR = {
-  energy:           '#cf8e5e',
-  groove:           '#5eaacf',
-  danceability:     '#cf7ecf',
-  arousal:          '#cf5e5e',
-  tonal:            '#cfcf5e',
-  timbre_bright:    '#5ecfcf',
-  approachability:  '#cf7eaa',
-  engagement:       '#7e7ecf',
-  vocal_probability:'#aaaaaa',
+  energy:'#d48040', groove:'#40a8d4', danceability:'#b860b8',
+  arousal:'#d44040', tonal:'#b8b840', timbre_bright:'#40b8b8',
+  approachability:'#b84080', engagement:'#6060c0',
 };
-
 const PHASE_COLOR = {
-  warmup_score:   '#5ecf8a',
-  build_score:    '#7e9ecf',
-  peak_score:     '#cf7e7e',
-  reset_score:    '#cfcf7e',
-  winddown_score: '#7ecfcf',
+  warmup_score:'#4ecf80', build_score:'#6090cf',
+  peak_score:'#cf6060', reset_score:'#b8b84a', winddown_score:'#4ab8b8',
 };
 
 function pct(v)    { return v == null ? '—' : Math.round(v * 100) + '%'; }
-function pctN(v)   { return v == null ? 0   : Math.round(v * 100); }
+function pctN(v)   { return v == null ? 0 : Math.round(v * 100); }
 function fmtBpm(v) { return v == null ? '—' : v.toFixed(1); }
 function fmtDur(s) {
   if (s == null) return '—';
-  return `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+  return `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
+}
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-function scoreRow(label, key, val) {
-  const color = SCORE_COLOR[key] || '#888';
-  const w = pctN(val);
-  return `
-    <div class="score-row">
-      <div class="score-head">
-        <span class="score-name">${label}</span>
-        <span class="score-pct">${pct(val)}</span>
-      </div>
-      <div class="bar"><div class="bar-fill" style="width:${w}%;background:${color}"></div></div>
-    </div>`;
-}
-
-function phaseRow(label, key, val) {
-  const color = PHASE_COLOR[key] || '#888';
-  const w = pctN(val);
-  return `
-    <div class="score-row">
-      <div class="score-head">
-        <span class="score-name">${label}</span>
-        <span class="score-pct">${pct(val)}</span>
-      </div>
-      <div class="bar"><div class="bar-fill" style="width:${w}%;background:${color}"></div></div>
-    </div>`;
-}
-
-function renderCard(p) {
-  const title  = p.title  || p.track_id;
-  const artist = p.artist || '';
-
-  const camelot = p.camelot
-    ? `<span class="camelot-badge">${p.camelot}</span>`
-    : '<span style="color:var(--muted)">—</span>';
-
-  const genres = (p.genres || [])
-    .map(g => `<span class="genre-tag">${g.label}</span>`)
-    .join('');
-
-  return `
-  <div class="card">
-
-    <div class="card-section">
-      <div class="card-title" title="${title}">${title}</div>
-      <div class="card-artist">${artist || '<span style="color:var(--muted)">N/A</span>'}</div>
-      <div class="meta-row">
-        <div class="meta-item">
-          <span class="meta-label">Key</span>
-          <span class="meta-value">${camelot}</span>
-        </div>
-        <div class="meta-item">
-          <span class="meta-label">BPM</span>
-          <span class="meta-value">${fmtBpm(p.bpm)}</span>
-        </div>
-        <div class="meta-item">
-          <span class="meta-label">Duration</span>
-          <span class="meta-value">${fmtDur(p.duration)}</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="card-section">
-      <div class="section-label">Audio profile</div>
-      <div class="scores-grid">
-        ${scoreRow('Energy',       'energy',            p.energy)}
-        ${scoreRow('Groove',       'groove',            p.groove)}
-        ${scoreRow('Danceability', 'danceability',      p.danceability)}
-        ${scoreRow('Arousal',      'arousal',           p.arousal)}
-        ${scoreRow('Tonal',        'tonal',             p.tonal)}
-        ${scoreRow('Timbre',       'timbre_bright',     p.timbre_bright)}
-        ${scoreRow('Approachab.', 'approachability',   p.approachability)}
-        ${scoreRow('Engagement',   'engagement',        p.engagement)}
-      </div>
-    </div>
-
-    <div class="card-section">
-      <div class="section-label">Phase suitability</div>
-      <div class="phases-grid">
-        ${phaseRow('Warm-up',   'warmup_score',   p.warmup_score)}
-        ${phaseRow('Build',     'build_score',    p.build_score)}
-        ${phaseRow('Peak',      'peak_score',     p.peak_score)}
-        ${phaseRow('Reset',     'reset_score',    p.reset_score)}
-        ${phaseRow('Wind-down', 'winddown_score', p.winddown_score)}
-      </div>
-    </div>
-
-    ${genres ? `<div class="card-section"><div class="genres">${genres}</div></div>` : ''}
-
-  </div>`;
-}
-
+// ── Sort ──
 function sortVal(p, key) {
   switch (key) {
-    case 'artist':        return (p.artist || '').toLowerCase() + (p.title || '').toLowerCase();
-    case 'title':         return (p.title  || '').toLowerCase();
-    case 'bpm':           return p.bpm              ?? -1;
-    case 'energy':        return p.energy            ?? -1;
-    case 'groove':        return p.groove            ?? -1;
-    case 'danceability':  return p.danceability      ?? -1;
-    case 'arousal':       return p.arousal           ?? -1;
-    case 'tonal':         return p.tonal             ?? -1;
-    case 'timbre':        return p.timbre_bright      ?? -1;
-    case 'approachability': return p.approachability ?? -1;
-    case 'engagement':    return p.engagement        ?? -1;
-    case 'warmup':        return p.warmup_score      ?? -1;
-    case 'build':         return p.build_score       ?? -1;
-    case 'peak':          return p.peak_score        ?? -1;
-    case 'reset':         return p.reset_score       ?? -1;
-    case 'winddown':      return p.winddown_score    ?? -1;
+    case 'artist':          return (p.artist||'').toLowerCase()+'\0'+(p.title||'').toLowerCase();
+    case 'title':           return (p.title||'').toLowerCase();
+    case 'bpm':             return p.bpm              ?? -1;
+    case 'camelot':         return camelotPos(p.camelot);
+    case 'energy':          return p.energy            ?? -1;
+    case 'groove':          return p.groove            ?? -1;
+    case 'danceability':    return p.danceability      ?? -1;
+    case 'arousal':         return p.arousal           ?? -1;
+    case 'tonal':           return p.tonal             ?? -1;
+    case 'timbre':          return p.timbre_bright      ?? -1;
+    case 'approachability': return p.approachability   ?? -1;
+    case 'engagement':      return p.engagement        ?? -1;
+    case 'warmup':          return p.warmup_score      ?? -1;
+    case 'build':           return p.build_score       ?? -1;
+    case 'peak':            return p.peak_score        ?? -1;
+    case 'reset':           return p.reset_score       ?? -1;
+    case 'winddown':        return p.winddown_score    ?? -1;
     default: return 0;
   }
 }
 
-function render() {
+function filteredSorted() {
   const q = query.toLowerCase();
-  let list = profiles.filter(p =>
-    !q
-    || (p.artist || '').toLowerCase().includes(q)
-    || (p.title  || '').toLowerCase().includes(q)
+  const list = profiles.filter(p =>
+    !q || (p.artist||'').toLowerCase().includes(q) || (p.title||'').toLowerCase().includes(q)
   );
-
   list.sort((a, b) => {
-    const av = sortVal(a, sortKey);
-    const bv = sortVal(b, sortKey);
-    if (typeof av === 'string') return av < bv ? -1 : av > bv ? 1 : 0;
-    return bv - av;
+    const av = sortVal(a, sortKey), bv = sortVal(b, sortKey);
+    const cmp = typeof av === 'string' ? (av < bv ? -1 : av > bv ? 1 : 0) : av - bv;
+    return sortAsc ? cmp : -cmp;
   });
-
-  const totalPages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
-  if (currentPage >= totalPages) currentPage = totalPages - 1;
-
-  const page = list.slice(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE);
-
-  const grid = document.getElementById('grid');
-  grid.innerHTML = page.length
-    ? page.map(renderCard).join('')
-    : '<div class="msg">No tracks found.</div>';
-
-  document.getElementById('stats').textContent =
-    `${list.length} / ${profiles.length} tracks`;
-
-  renderPagination(totalPages);
+  return list;
 }
 
-function renderPagination(totalPages) {
-  const el = document.getElementById('pagination');
-  if (totalPages <= 1) { el.innerHTML = ''; return; }
+// ── Track row ──
+function renderRow(p) {
+  const title  = esc(p.title  || p.track_id);
+  const artist = p.artist ? esc(p.artist) : '<span style="color:var(--t3)">N/A</span>';
+  const bpm    = fmtBpm(p.bpm);
+  const key    = p.camelot ? `<span class="camelot-sm">${p.camelot}</span>` : '<span style="color:var(--t3)">—</span>';
+  const en = pctN(p.energy);
+  const gr = pctN(p.groove);
 
-  const prev = `<button class="page-btn" id="pg-prev" ${currentPage === 0 ? 'disabled' : ''}>‹</button>`;
-  const next = `<button class="page-btn" id="pg-next" ${currentPage >= totalPages - 1 ? 'disabled' : ''}>›</button>`;
-
-  // Show up to 7 page buttons around current page
-  let pages = '';
-  const range = 3;
-  for (let i = 0; i < totalPages; i++) {
-    if (i === 0 || i === totalPages - 1 || Math.abs(i - currentPage) <= range) {
-      pages += `<button class="page-btn ${i === currentPage ? 'active' : ''}" data-page="${i}">${i + 1}</button>`;
-    } else if (Math.abs(i - currentPage) === range + 1) {
-      pages += `<span id="page-info">…</span>`;
-    }
+  function miniBar(cls, val, n, color) {
+    return `<div class="mini-bar-wrap ${cls}">
+      <div class="mini-val" style="color:${val==null?'var(--t3)':'var(--text)'}">${pct(val)}</div>
+      <div class="mini-bar"><div class="mini-bar-fill" style="width:${n}%;background:${color}"></div></div>
+    </div>`;
   }
 
-  el.innerHTML = prev + pages + next;
+  return `<div class="track-row" data-id="${esc(p.track_id)}">
+  <div class="tr-identity col-identity">
+    <div class="tr-title">${title}</div>
+    <div class="tr-artist">${artist}</div>
+  </div>
+  <div class="tr-cell col-bpm ${p.bpm==null?'dim':''}">${bpm}</div>
+  <div class="tr-cell col-key">${key}</div>
+  ${miniBar('col-energy', p.energy, en, '#d48040')}
+  ${miniBar('col-groove', p.groove, gr, '#40a8d4')}
+</div>`;
+}
 
-  el.querySelector('#pg-prev')?.addEventListener('click', () => { currentPage--; render(); window.scrollTo(0,0); });
-  el.querySelector('#pg-next')?.addEventListener('click', () => { currentPage++; render(); window.scrollTo(0,0); });
-  el.querySelectorAll('.page-btn[data-page]').forEach(btn => {
-    btn.addEventListener('click', () => { currentPage = +btn.dataset.page; render(); window.scrollTo(0,0); });
+const TOOLTIPS = {
+  energy:          'Overall intensity — how hard and exciting the track hits.',
+  groove:          'How much the track pulls you in and makes you move.',
+  danceability:    'How well the track works on a dancefloor.',
+  arousal:         'Perceived excitement and stimulation level.',
+  tonal:           'How melodic and harmonically rich the track is.',
+  timbre_bright:   'Brightness of the sound — high means lots of highs and presence.',
+  approachability: 'How easy and welcoming the track feels to a listener.',
+  engagement:      'How much the track holds attention and creates emotional connection.',
+  warmup_score:    'How well this track fits the opening of a set.',
+  build_score:     'How well this track works for building energy mid-set.',
+  peak_score:      'How well this track fits the peak / climax of a set.',
+  reset_score:     'How well this track works as a breakdown to drop energy.',
+  winddown_score:  'How well this track fits closing a set.',
+};
+
+// ── Detail panel ──
+function scoreRow(label, key, val, colorMap) {
+  const color   = colorMap[key] || '#666';
+  const tooltip = TOOLTIPS[key] ? ` title="${TOOLTIPS[key]}"` : '';
+  return `<div class="score-row">
+    <div class="score-head">
+      <span class="score-name" style="cursor:default"${tooltip}>${label}</span>
+      <span class="score-val">${pct(val)}</span>
+    </div>
+    <div class="bar"><div class="bar-fill" style="width:${pctN(val)}%;background:${color}"></div></div>
+  </div>`;
+}
+
+function renderDetail(p) {
+  const title  = esc(p.title  || p.track_id);
+  const artist = p.artist ? esc(p.artist) : null;
+  const camelot = p.camelot
+    ? `<span class="camelot-sm" style="font-size:15px;padding:1px 8px">${p.camelot}</span>`
+    : '<span style="color:var(--t3)">—</span>';
+  const genres = (p.genres||[]).map(g=>`<span class="g-tag">${esc(g.label)}</span>`).join('');
+
+  return `
+  <div class="d-identity">
+    <div class="d-title">${title}</div>
+    ${artist ? `<div class="d-artist">${artist}</div>` : '<div class="d-artist" style="color:var(--t3)">N/A</div>'}
+    <div class="d-meta">
+      <div class="d-chip"><span class="d-chip-label">Key</span><span class="d-chip-val">${camelot}</span></div>
+      <div class="d-chip"><span class="d-chip-label">BPM</span><span class="d-chip-val">${fmtBpm(p.bpm)}</span></div>
+      <div class="d-chip"><span class="d-chip-label">Duration</span><span class="d-chip-val">${fmtDur(p.duration)}</span></div>
+    </div>
+  </div>
+
+  <div class="d-section">
+    <div class="d-section-title">Audio profile</div>
+    <div class="score-grid">
+      ${scoreRow('Energy',      'energy',          p.energy,          SCORE_COLOR)}
+      ${scoreRow('Groove',      'groove',          p.groove,          SCORE_COLOR)}
+      ${scoreRow('Danceability','danceability',    p.danceability,    SCORE_COLOR)}
+      ${scoreRow('Arousal',     'arousal',         p.arousal,         SCORE_COLOR)}
+      ${scoreRow('Tonal',       'tonal',           p.tonal,           SCORE_COLOR)}
+      ${scoreRow('Timbre',      'timbre_bright',   p.timbre_bright,   SCORE_COLOR)}
+      ${scoreRow('Approach',    'approachability', p.approachability, SCORE_COLOR)}
+      ${scoreRow('Engagement',  'engagement',      p.engagement,      SCORE_COLOR)}
+    </div>
+  </div>
+
+  <div class="d-section">
+    <div class="d-section-title">Phase suitability</div>
+    <div class="score-grid">
+      ${scoreRow('Warm-up',   'warmup_score',   p.warmup_score,   PHASE_COLOR)}
+      ${scoreRow('Build',     'build_score',    p.build_score,    PHASE_COLOR)}
+      ${scoreRow('Peak',      'peak_score',     p.peak_score,     PHASE_COLOR)}
+      ${scoreRow('Reset',     'reset_score',    p.reset_score,    PHASE_COLOR)}
+      ${scoreRow('Wind-down', 'winddown_score', p.winddown_score, PHASE_COLOR)}
+    </div>
+  </div>
+
+  ${genres ? `<div class="d-section"><div class="d-section-title">Genres</div><div class="genres">${genres}</div></div>` : ''}
+  `;
+}
+
+// ── Render list ──
+function render() {
+  const list = filteredSorted();
+  const slice = list.slice(0, visible);
+  const remaining = list.length - slice.length;
+
+  document.getElementById('stats').textContent = `${list.length} / ${profiles.length} tracks`;
+
+  const trackList = document.getElementById('track-list');
+  trackList.innerHTML = slice.length
+    ? slice.map(renderRow).join('')
+    : '<div class="msg-full">No tracks found.</div>';
+
+  // re-attach row click listeners
+  trackList.querySelectorAll('.track-row').forEach(row => {
+    row.addEventListener('click', () => {
+      const id = row.dataset.id;
+      const p = profiles.find(x => x.track_id === id);
+      if (!p) return;
+      selected = id;
+      trackList.querySelectorAll('.track-row').forEach(r => r.classList.toggle('selected', r.dataset.id === id));
+      showDetail(p);
+    });
+    if (row.dataset.id === selected) row.classList.add('selected');
+  });
+
+  const lmr = document.getElementById('load-more-row');
+  if (remaining > 0) {
+    lmr.classList.remove('hidden');
+    lmr.innerHTML = `<button id="lm-btn">Load ${Math.min(PAGE_SIZE, remaining)} more</button>
+      <span class="lm-count">${remaining} remaining</span>`;
+    document.getElementById('lm-btn').addEventListener('click', () => { visible += PAGE_SIZE; render(); });
+  } else {
+    lmr.classList.add('hidden');
+    lmr.innerHTML = '';
+  }
+}
+
+function isMobile() { return window.innerWidth <= 640; }
+
+function showDetail(p) {
+  document.getElementById('detail-empty').classList.add('hidden');
+  const dc = document.getElementById('detail-content');
+  dc.classList.remove('hidden');
+  dc.innerHTML = renderDetail(p);
+  if (isMobile()) {
+    document.getElementById('tracks').classList.add('detail-open');
+    document.getElementById('back-btn').classList.remove('hidden');
+    document.getElementById('lib-crumb').classList.add('hidden');
+    window.scrollTo(0, 0);
+  }
+}
+
+function closeDetail() {
+  document.getElementById('tracks').classList.remove('detail-open');
+  document.getElementById('back-btn').classList.add('hidden');
+  document.getElementById('lib-crumb').classList.remove('hidden');
+}
+
+// ── Col header sort ──
+function updateColHeaders() {
+  document.querySelectorAll('.col-hdr').forEach(h => {
+    const active = h.dataset.sort === sortKey;
+    h.classList.toggle('active', active);
+    h.querySelector('.arrow').textContent = active ? (sortAsc ? '↑' : '↓') : '';
   });
 }
 
-async function load() {
+// ── Library picker ──
+let allLibs = [];       // [{name, count, profiles}]
+let selectedLib = null;
+
+function libAgg(ps) {
+  // Aggregate stats from profile list
+  const bpms    = ps.map(p => p.bpm).filter(v => v != null);
+  const energies = ps.map(p => p.energy).filter(v => v != null);
+  const keys    = {};
+  ps.forEach(p => { if (p.camelot) keys[p.camelot] = (keys[p.camelot] || 0) + 1; });
+  const topKeys = Object.entries(keys).sort((a,b) => b[1]-a[1]).slice(0,6).map(e => e[0]);
+  const genreMap = {};
+  ps.forEach(p => (p.genres||[]).forEach(g => {
+    genreMap[g.label] = (genreMap[g.label] || 0) + g.score;
+  }));
+  const topGenres = Object.entries(genreMap).sort((a,b) => b[1]-a[1]).slice(0,8).map(e => e[0]);
+  const avg = arr => arr.length ? arr.reduce((s,v) => s+v, 0) / arr.length : null;
+  return {
+    count: ps.length,
+    bpmMin: bpms.length ? Math.round(Math.min(...bpms)) : null,
+    bpmMax: bpms.length ? Math.round(Math.max(...bpms)) : null,
+    avgEnergy: avg(energies),
+    topKeys,
+    topGenres,
+  };
+}
+
+function renderLibDetail(lib) {
+  const a = libAgg(lib.profiles);
+  const bpmRange = a.bpmMin != null ? `${a.bpmMin} – ${a.bpmMax}` : '—';
+  const energy   = a.avgEnergy != null ? Math.round(a.avgEnergy * 100) + '%' : '—';
+  const keys     = a.topKeys.map(k =>
+    `<span class="camelot-sm" style="font-size:11px">${k}</span>`).join('') || '<span style="color:var(--t3)">—</span>';
+  const genres   = a.topGenres.map(g =>
+    `<span class="ld-genre">${esc(g)}</span>`).join('') || '<span style="color:var(--t3)">—</span>';
+
+  document.getElementById('lib-detail-empty').classList.add('hidden');
+  const dc = document.getElementById('lib-detail-content');
+  dc.classList.remove('hidden');
+  dc.innerHTML = `
+    <div class="ld-name">${esc(lib.name)}</div>
+    <div class="ld-chips">
+      <div class="ld-chip"><span class="ld-chip-label">Tracks</span><span class="ld-chip-val">${a.count}</span></div>
+      <div class="ld-chip"><span class="ld-chip-label">BPM range</span><span class="ld-chip-val" style="font-size:13px">${bpmRange}</span></div>
+      <div class="ld-chip"><span class="ld-chip-label">Avg energy</span><span class="ld-chip-val">${energy}</span></div>
+    </div>
+    <div class="ld-section">
+      <div class="ld-section-title">Top keys</div>
+      <div class="ld-keys">${keys}</div>
+    </div>
+    <div class="ld-section">
+      <div class="ld-section-title">Top genres</div>
+      <div class="ld-genres">${genres}</div>
+    </div>
+    <button class="browse-btn" id="browse-btn">Browse →</button>`;
+  dc.querySelector('#browse-btn').addEventListener('click', () => enterLibrary(lib.name, lib.profiles));
+}
+
+function renderLibList(filterQ) {
+  const listEl = document.getElementById('lib-list');
+  const q = filterQ.toLowerCase().trim();
+  const rows = q ? allLibs.filter(l => l.name.toLowerCase().includes(q)) : allLibs;
+  if (!rows.length) {
+    listEl.innerHTML = '<div class="msg-full" style="font-size:12px">No libraries match.</div>';
+    return;
+  }
+  listEl.innerHTML = rows.map(l => `
+    <div class="lib-row${selectedLib === l.name ? ' selected' : ''}" data-lib="${esc(l.name)}">
+      <span class="lib-row-name">${esc(l.name)}</span>
+      <span class="lib-row-count">${l.count === '…' ? '…' : l.count}</span>
+    </div>`).join('');
+  listEl.querySelectorAll('.lib-row').forEach(row => {
+    row.addEventListener('click', () => {
+      selectedLib = row.dataset.lib;
+      listEl.querySelectorAll('.lib-row').forEach(r => r.classList.toggle('selected', r.dataset.lib === selectedLib));
+      const lib = allLibs.find(l => l.name === selectedLib);
+      if (lib && lib.profiles) renderLibDetail(lib);
+    });
+  });
+}
+
+async function loadLibraries() {
+  const listEl  = document.getElementById('lib-list');
+  const searchEl = document.getElementById('lib-search');
+  selectedLib = null;
+  searchEl.value = '';
+  searchEl.classList.add('hidden');
+  document.getElementById('lib-detail-empty').classList.remove('hidden');
+  document.getElementById('lib-detail-content').classList.add('hidden');
+  listEl.innerHTML = '<div class="msg-full" style="font-size:12px">Loading…</div>';
   try {
-    profiles = await fetch('/api/profiles').then(r => r.json());
-    render();
+    const libs = await fetch('/api/libraries').then(r => r.json());
+    if (!libs.length) {
+      listEl.innerHTML = `<div id="picker-empty">
+        No libraries found.<br>
+        Run <code>mixprep scan &lt;dir&gt; --library &lt;name&gt;</code> first,<br>
+        then <code>mixprep analyze --stage profile --library &lt;name&gt;</code>.
+      </div>`;
+      return;
+    }
+    allLibs = libs.map(name => ({ name, count: '…', profiles: null }));
+    if (libs.length > 6) searchEl.classList.remove('hidden');
+    renderLibList('');
+    // Fetch all profiles in parallel (needed for aggregation)
+    await Promise.all(libs.map((name, i) =>
+      fetch(`/api/profiles/${encodeURIComponent(name)}`).then(r => r.json()).then(ps => {
+        allLibs[i].profiles = ps;
+        allLibs[i].count = ps.length;
+        renderLibList(searchEl.value);
+      }).catch(() => { allLibs[i].count = '?'; })
+    ));
   } catch {
-    document.getElementById('grid').innerHTML =
-      '<div class="msg">Failed to load library data.</div>';
+    listEl.innerHTML = '<span class="msg-full">Failed to load libraries.</span>';
   }
 }
+
+function enterLibrary(name, ps) {
+  profiles = ps; visible = PAGE_SIZE; query = ''; selected = null;
+  document.getElementById('search').value = '';
+  document.getElementById('picker').classList.add('hidden');
+  document.getElementById('tracks').classList.remove('hidden');
+  document.getElementById('search').classList.remove('hidden');
+  document.getElementById('stats').classList.remove('hidden');
+  document.getElementById('lib-crumb').classList.remove('hidden');
+  document.getElementById('lib-crumb-name').textContent = name;
+  document.getElementById('detail-empty').classList.remove('hidden');
+  document.getElementById('detail-content').classList.add('hidden');
+  render();
+}
+
+function showPicker() {
+  document.getElementById('tracks').classList.add('hidden');
+  document.getElementById('search').classList.add('hidden');
+  document.getElementById('stats').classList.add('hidden');
+  document.getElementById('lib-crumb').classList.add('hidden');
+  document.getElementById('picker').classList.remove('hidden');
+  loadLibraries();
+}
+
+// ── Listeners ──
+document.querySelectorAll('.col-hdr').forEach(h => {
+  h.addEventListener('click', () => {
+    if (sortKey === h.dataset.sort) {
+      sortAsc = !sortAsc;
+    } else {
+      sortKey = h.dataset.sort;
+      sortAsc = new Set(['artist','title','camelot']).has(sortKey);
+    }
+    updateColHeaders();
+    render();
+  });
+});
 
 document.getElementById('search').addEventListener('input', e => {
   query = e.target.value;
-  currentPage = 0;
+  visible = PAGE_SIZE;
   render();
 });
 
-document.querySelectorAll('.sort-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    sortKey = btn.dataset.sort;
-    currentPage = 0;
-    document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    render();
-  });
-});
+document.getElementById('change-lib').addEventListener('click', showPicker);
+document.getElementById('back-btn').addEventListener('click', closeDetail);
+document.getElementById('lib-search').addEventListener('input', e => renderLibList(e.target.value));
 
-load();
+updateColHeaders();
+loadLibraries();
 </script>
 </body>
 </html>

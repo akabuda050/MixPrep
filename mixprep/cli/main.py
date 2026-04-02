@@ -75,13 +75,12 @@ def scan(
 
 @app.command("serve")
 def serve(
-    library: str = typer.Option(..., help="Library name to serve"),
     port: int = typer.Option(8765, help="Port to listen on"),
 ) -> None:
-    """Start a local web server to browse library profiles."""
+    """Start a local web server to browse all library profiles."""
     from mixprep.cli.commands.serve import run_serve
 
-    run_serve(library, port)
+    run_serve(port)
 
 
 if __name__ == "__main__":
