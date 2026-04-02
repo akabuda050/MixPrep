@@ -18,7 +18,6 @@ import io
 import json
 from unittest.mock import MagicMock, patch
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -157,8 +156,12 @@ def test_handler_profiles_returns_json(tmp_path):
 
     profiles_dir = tmp_path / "libraries" / "mylib" / "profiles"
     profiles_dir.mkdir(parents=True)
-    (profiles_dir / "a.json").write_text(json.dumps({"track_id": "a", "bpm": 128.0}), encoding="utf-8")
-    (profiles_dir / "b.json").write_text(json.dumps({"track_id": "b", "bpm": 132.0}), encoding="utf-8")
+    (profiles_dir / "a.json").write_text(
+        json.dumps({"track_id": "a", "bpm": 128.0}), encoding="utf-8"
+    )
+    (profiles_dir / "b.json").write_text(
+        json.dumps({"track_id": "b", "bpm": 132.0}), encoding="utf-8"
+    )
 
     handler_cls = _make_handler(tmp_path)
     result = _make_request(handler_cls, "/api/profiles/mylib")

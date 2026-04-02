@@ -31,7 +31,7 @@ def _make_handler(data_base: Path) -> type:
             elif self.path == "/api/libraries":
                 self._serve_libraries()
             elif self.path.startswith("/api/profiles/"):
-                lib = self.path[len("/api/profiles/"):]
+                lib = self.path[len("/api/profiles/") :]
                 self._serve_profiles(lib)
             else:
                 self.send_error(404)
