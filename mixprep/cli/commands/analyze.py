@@ -10,7 +10,7 @@ from mixprep.pipeline.scan import load_tracks_dir
 
 console = Console()
 
-_STAGES = ("essentia", "classify")
+_STAGES = ("essentia", "profile")
 
 
 def run_analyze(stage: str, library: str) -> None:
@@ -34,8 +34,8 @@ def run_analyze(stage: str, library: str) -> None:
 
     if stage == "essentia":
         _run_essentia(tracks, library)
-    else:
-        console.print(f"[yellow]Stage {stage!r} not yet implemented.[/yellow]")
+    elif stage == "profile":
+        _run_profile(tracks, library)
 
 
 def _run_essentia(tracks: list, library: str) -> None:
@@ -80,3 +80,55 @@ def _run_essentia(tracks: list, library: str) -> None:
     console.print(f"[green]✓[/green] {ok}/{len(tracks)} tracks processed → {essentia_dir}")
     if failed:
         console.print(f"[yellow]{failed} tracks failed (essentia_failed=true in artifact)[/yellow]")
+
+
+def _run_profile(tracks: list, library: str) -> None:
+    from mixprep.pipeline.essentia_runner import load_essentia
+    from mixprep.pipeline.profile import compute_profile, write_profile
+
+    essentia_dir = data_dir(library) / "essentia"
+    profiles_dir = data_dir(library) / "profiles"
+
+    skipped = 0
+    failed = 0
+    processed = 0
+
+    with Progress(
+        TextColumn("{task.description}"),
+        BarColumn(bar_width=30),
+        MofNCompleteColumn(),
+        console=console,
+        transient=True,
+    ) as progress:
+        task = progress.add_task(" " * 40, total=len(tracks))
+
+        for track in tracks:
+            name = Path(track.file_path).name
+            progress.update(task, advance=1, description=f"{name:<40.40}")
+
+            essentia_path = essentia_dir / f"{track.track_id}.json"
+            if not essentia_path.exists():
+                skipped += 1
+                continue
+
+            try:
+                essentia = load_essentia(essentia_path)
+            except Exception as exc:
+                console.print(
+                    f"[yellow]Skipping {track.track_id}: corrupt essentia artifact: {exc}[/yellow]"
+                )
+                failed += 1
+                continue
+
+            profile = compute_profile(track, essentia)
+            write_profile(profile, profiles_dir)
+            processed += 1
+
+    console.print(f"[green]✓[/green] {processed} profiles written → {profiles_dir}")
+    if skipped:
+        console.print(
+            f"[yellow]{skipped} tracks skipped "
+            f"(no essentia artifact — run essentia stage first)[/yellow]"
+        )
+    if failed:
+        console.print(f"[yellow]{failed} tracks failed (corrupt essentia artifact)[/yellow]")

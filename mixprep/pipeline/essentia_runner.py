@@ -48,6 +48,7 @@ from essentia import EssentiaLogger
 
 from mixprep.models.cache import models_dir
 from mixprep.pipeline.schemas import (
+    DetectedKey,
     EssentiaFlags,
     EssentiaOutput,
     EssentiaRaw,
@@ -153,6 +154,11 @@ def load_models() -> None:
         output="model/Identity",
     )
 
+    # ── Audio analysis algorithms (no model files needed) ───────────────────
+    # Instantiated once here so they are reused across tracks.
+    _models["rhythm_extractor"] = es.RhythmExtractor2013(method="multifeature")
+    _models["key_extractor"] = es.KeyExtractor()
+
     _models_loaded = True
     log.info("All Essentia models loaded.")
 
@@ -248,11 +254,35 @@ def run_essentia(track: TrackIndex) -> EssentiaOutput:
     load_models()
 
     # ── Load audio ──────────────────────────────────────────────────────────
+    # 16kHz for ML models; 44100Hz for rhythm/key extraction (needs full range)
+    need_bpm = track.bpm is None
+    need_key = track.key is None
+
     try:
         audio = es.MonoLoader(filename=track.file_path, sampleRate=_SAMPLE_RATE)()
     except Exception as exc:
         log.warning("Audio load failed for %s: %s", track.file_path, exc)
         return _null_output(track.track_id, time_curves=None)
+
+    # ── BPM / Key detection (only when tag missing) ─────────────────────────
+    detected_bpm: float | None = None
+    detected_key: DetectedKey | None = None
+
+    if need_bpm or need_key:
+        try:
+            audio_44k = es.MonoLoader(filename=track.file_path, sampleRate=44100)()
+            if need_bpm:
+                bpm_val, _, _, _, _ = _models["rhythm_extractor"](audio_44k)
+                detected_bpm = float(bpm_val)
+            if need_key:
+                key_str, scale_str, strength_val = _models["key_extractor"](audio_44k)
+                detected_key = DetectedKey(
+                    key=key_str,
+                    scale=scale_str,
+                    strength=float(strength_val),
+                )
+        except Exception as exc:
+            log.warning("BPM/Key detection failed for %s: %s", track.file_path, exc)
 
     # ── Time curves (librosa, independent of Essentia models) ───────────────
     time_curves: TimeCurves | None = None
@@ -287,14 +317,21 @@ def run_essentia(track: TrackIndex) -> EssentiaOutput:
 
     # ── Assemble raw activations ─────────────────────────────────────────────
     # MAEST outputs raw logits (1,1,1,519) — apply softmax to get probabilities.
+    maest_labels = _labels.get("maest", [])
     maest_probs = _softmax(_pool_mean(maest_act))
+    if len(maest_labels) != len(maest_probs):
+        log.warning(
+            "MAEST label count mismatch: %d labels vs %d model outputs — truncating to shorter",
+            len(maest_labels),
+            len(maest_probs),
+        )
     raw = EssentiaRaw(
         discogs_effnet_embedding=_pool_mean(effnet_emb).tolist(),
         msd_musicnn_embedding=_pool_mean(musicnn_emb).tolist(),
         discogs_effnet_activations=_activation_dict(effnet_act, _labels.get("effnet", [])),
         maest_activations={
             label: float(maest_probs[i])
-            for i, label in enumerate(_labels.get("maest", []))
+            for i, label in enumerate(maest_labels)
             if i < len(maest_probs)
         },
         jamendo_genre_activations=_activation_dict(
@@ -306,15 +343,23 @@ def run_essentia(track: TrackIndex) -> EssentiaOutput:
     # Binary head positive-class indices (verified by running real inference):
     #   idx 0 = positive: danceability(danceable), tonal
     #   idx 1 = positive: timbre(bright), voice(vocal)
-    # arousal_valence: (valence, arousal) — DEAM convention. dim 1 = arousal [1–9].
-    av_mean = _pool_mean(av_act)
+    # arousal_valence: (valence, arousal) — DEAM convention. dim 0 = valence, dim 1 = arousal [1–9].
+    try:
+        av_mean = _pool_mean(av_act)
+        arousal_val: float | None = float(av_mean[1]) if len(av_mean) >= 2 else None
+        approachability_val: float | None = float(_pool_mean(approach_act)[0])
+        engagement_val: float | None = float(_pool_mean(engagement_act)[0])
+    except (IndexError, ValueError) as exc:
+        log.warning("Score extraction failed for %s: %s", track.file_path, exc)
+        return _null_output(track.track_id, time_curves)
+
     scores = EssentiaScores(
         danceability=_binary_score(dance_act, idx=0),
-        arousal=float(av_mean[1]) if len(av_mean) >= 2 else None,
+        arousal=arousal_val,
         tonal=_binary_score(tonal_act, idx=0),
         timbre_bright=_binary_score(timbre_act, idx=1),
-        approachability=float(_pool_mean(approach_act)[0]),
-        engagement=float(_pool_mean(engagement_act)[0]),
+        approachability=approachability_val,
+        engagement=engagement_val,
         vocal_probability=_binary_score(voice_act, idx=1),
     )
 
@@ -323,6 +368,8 @@ def run_essentia(track: TrackIndex) -> EssentiaOutput:
         raw=raw,
         scores=scores,
         time_curves=time_curves,
+        detected_bpm=detected_bpm,
+        detected_key=detected_key,
         flags=EssentiaFlags(essentia_failed=False),
     )
 

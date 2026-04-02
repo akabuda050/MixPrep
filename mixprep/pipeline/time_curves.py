@@ -59,16 +59,8 @@ def compute_time_curves(audio: np.ndarray, sample_rate: int) -> TimeCurves:
     mid_frames = stft[mid_mask].mean(axis=0) if mid_mask.any() else np.zeros(stft.shape[1])
     high_frames = stft[high_mask].mean(axis=0) if high_mask.any() else np.zeros(stft.shape[1])
 
-    # Novelty = onset strength (same signal, stored separately for semantic clarity)
-    novelty_frames = onset_frames.copy()
-
     # Align all curves to the minimum length (STFT may be 1 frame longer than onset)
-    n = min(
-        len(rms_frames),
-        len(onset_frames),
-        stft.shape[1],
-        len(novelty_frames),
-    )
+    n = min(len(rms_frames), len(onset_frames), stft.shape[1])
 
     return TimeCurves(
         rms=rms_frames[:n].tolist(),
@@ -76,5 +68,5 @@ def compute_time_curves(audio: np.ndarray, sample_rate: int) -> TimeCurves:
         low_band=low_frames[:n].tolist(),
         mid_band=mid_frames[:n].tolist(),
         high_band=high_frames[:n].tolist(),
-        novelty=novelty_frames[:n].tolist(),
+        novelty=onset_frames[:n].tolist(),
     )
