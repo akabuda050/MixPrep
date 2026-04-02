@@ -15,13 +15,12 @@ from __future__ import annotations
 
 import io
 import json
-from pathlib import Path
 from unittest.mock import MagicMock, patch
-
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_request(handler_cls, path: str) -> MagicMock:
     """Instantiate handler with a fake socket and issue a GET request."""
@@ -86,6 +85,7 @@ def test_run_serve_exits_1_on_missing_library(tmp_path, monkeypatch):
 
     monkeypatch.setenv("MIXPREP_DATA_DIR", str(tmp_path))
     import pytest
+
     with pytest.raises(SystemExit) as exc:
         run_serve("nonexistent", 9876)
     assert exc.value.code == 1
@@ -167,8 +167,12 @@ def test_handler_profiles_returns_json(tmp_path):
 
     profiles_dir = tmp_path / "profiles"
     profiles_dir.mkdir()
-    (profiles_dir / "a.json").write_text(json.dumps({"track_id": "a", "bpm": 128.0}), encoding="utf-8")
-    (profiles_dir / "b.json").write_text(json.dumps({"track_id": "b", "bpm": 132.0}), encoding="utf-8")
+    (profiles_dir / "a.json").write_text(
+        json.dumps({"track_id": "a", "bpm": 128.0}), encoding="utf-8"
+    )
+    (profiles_dir / "b.json").write_text(
+        json.dumps({"track_id": "b", "bpm": 132.0}), encoding="utf-8"
+    )
 
     handler_cls = _make_handler(tmp_path)
     result = _make_request(handler_cls, "/api/profiles")
