@@ -7,7 +7,8 @@ Analyzes your music library using machine learning to extract genre, mood, energ
 ## What it does
 
 - **Scan** — indexes your music library, assigns stable track IDs, and reads BPM, key, title, artist from file tags — all in one pass
-- **Analyze** — runs ML models to detect genre, mood, energy, danceability, vocals, instruments
+- **Analyze** — runs ML models to detect genre, energy, danceability, vocals, and more; then builds a per-track profile with phase suitability scores
+- **Serve** — starts a local web UI to browse and inspect library profiles
 - **Build** — generates candidate mix sets for a chosen profile using beam search
 
 ## Workflow
@@ -17,7 +18,8 @@ Analyzes your music library using machine learning to extract genre, mood, energ
 2. Scan your library      mixprep scan /path/to/music --library my_library
 3. Analyze tracks         mixprep analyze --stage essentia --library my_library
                           mixprep analyze --stage profile --library my_library
-4. Build a set            mixprep build --profile peak --duration 60 --library my_library
+4. Browse profiles        mixprep serve --library my_library --port 8765
+5. Build a set            mixprep build --profile peak --duration 60 --library my_library
 ```
 
 `--library` is required on every command — it namespaces all output so you can maintain multiple isolated libraries (e.g. `house_sets`, `techno_main`). `--duration` is in minutes. Each step produces reviewable JSON files you can inspect before running the next one.
@@ -26,6 +28,8 @@ To remove entries for files that no longer exist on disk:
 ```
 mixprep scan /path/to/music --library my_library --prune
 ```
+
+The `serve` command starts a local web server at `http://127.0.0.1:<port>` with a dark-theme UI showing all track profiles — sortable by any score, searchable by artist or title, paginated.
 
 ## Requirements
 
@@ -193,6 +197,8 @@ Each file is plain JSON — open and inspect at any stage.
 ```json
 {
   "track_id": "2abc...",
+  "title": "Track Title",
+  "artist": "Artist Name",
   "duration": 412.5,
   "camelot": "11A",
   "bpm": 132.0,
@@ -210,7 +216,7 @@ Each file is plain JSON — open and inspect at any stage.
   "peak_score": 0.87,
   "reset_score": 0.41,
   "winddown_score": 0.28,
-  "genres": [{"label": "techno", "score": 0.82}, {"label": "electronic disco", "score": 0.39}]
+  "genres": [{"label": "techno", "score": 0.82}, {"label": "electronic", "score": 0.74}]
 }
 ```
 

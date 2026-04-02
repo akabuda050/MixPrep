@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MixPrep Library</title>
+<style>
+  :root {
+    --bg:      #0d0d0d;
+    --surface: #141414;
+    --surface2:#1c1c1c;
+    --border:  #282828;
+    --accent:  #d4a843;
+    --accent2: #5fc4c4;
+    --text:    #e0e0e0;
+    --muted:   #555;
+    --green:   #5ecf8a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  /* ── Header ── */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 30;
+  }
+  header h1 {
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    color: var(--accent);
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+  #search {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--text);
+    padding: 5px 10px;
+    font-size: 12px;
+    flex: 1;
+    min-width: 0;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  #search:focus { border-color: var(--accent); }
+  #search::placeholder { color: var(--muted); }
+  #stats { color: var(--muted); font-size: 11px; flex-shrink: 0; white-space: nowrap; }
+
+  /* ── Sort bar ── */
+  #sort-bar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 6px 16px;
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  #sort-bar::-webkit-scrollbar { display: none; }
+  #sort-bar label {
+    color: var(--muted);
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    flex-shrink: 0;
+    margin-right: 3px;
+  }
+  .sort-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 9px;
+    padding: 3px 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: all 0.12s;
+  }
+  .sort-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .sort-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(212,168,67,0.08); }
+
+  /* ── Grid ── */
+  #grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1px;
+    background: var(--border);
+  }
+  @media (max-width: 400px) {
+    #grid { grid-template-columns: 1fr; }
+  }
+
+  /* ── Card ── */
+  .card {
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+  }
+  .card:hover { background: var(--surface2); }
+
+  /* Card section = visually separated block */
+  .card-section {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .card-section:last-child { border-bottom: none; }
+
+  /* ── Identity ── */
+  .card-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .card-artist {
+    font-size: 11px;
+    color: var(--accent2);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-top: 2px;
+  }
+
+  /* ── Meta ── */
+  .meta-row { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 10px; }
+  .meta-item { display: flex; flex-direction: column; gap: 2px; }
+  .meta-label { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+  .meta-value { font-size: 13px; font-weight: 700; color: var(--text); }
+  .camelot-badge {
+    display: inline-block;
+    background: rgba(94,207,138,0.1);
+    border: 1px solid rgba(94,207,138,0.28);
+    border-radius: 3px;
+    color: var(--green);
+    font-size: 12px;
+    font-weight: 700;
+    padding: 1px 7px;
+  }
+
+  /* ── Section label ── */
+  .section-label {
+    font-size: 9px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 9px;
+  }
+
+  /* ── Scores ── */
+  .scores-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 7px 18px;
+  }
+  .score-row { display: flex; flex-direction: column; gap: 3px; }
+  .score-head { display: flex; justify-content: space-between; }
+  .score-name { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; }
+  .score-pct  { font-size: 10px; font-weight: 700; color: var(--text); }
+  .bar { background: var(--border); border-radius: 2px; height: 3px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 2px; }
+
+  /* ── Phases ── */
+  .phases-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 7px 18px;
+  }
+
+  /* ── Genres ── */
+  .genres { display: flex; flex-wrap: wrap; gap: 4px; }
+  .genre-tag {
+    background: rgba(80,80,160,0.15);
+    border: 1px solid rgba(80,80,160,0.28);
+    border-radius: 3px;
+    color: #8888cc;
+    font-size: 10px;
+    padding: 1px 6px;
+  }
+
+  /* ── Empty/loading ── */
+  .msg {
+    color: var(--muted);
+    text-align: center;
+    padding: 80px 20px;
+    font-size: 13px;
+    grid-column: 1 / -1;
+  }
+
+  /* ── Pagination ── */
+  #pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 16px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+  }
+  .page-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 11px;
+    min-width: 30px;
+    padding: 4px 8px;
+    text-align: center;
+    transition: all 0.12s;
+  }
+  .page-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .page-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(212,168,67,0.1); }
+  .page-btn:disabled { opacity: 0.3; cursor: default; }
+  #page-info { color: var(--muted); font-size: 11px; padding: 0 6px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>MixPrep</h1>
+  <input id="search" type="text" placeholder="Search artist or title…">
+  <span id="stats"></span>
+</header>
+
+<div id="sort-bar">
+  <label>Sort</label>
+  <button class="sort-btn active" data-sort="artist">Artist</button>
+  <button class="sort-btn" data-sort="title">Title</button>
+  <button class="sort-btn" data-sort="bpm">BPM</button>
+  <button class="sort-btn" data-sort="energy">Energy</button>
+  <button class="sort-btn" data-sort="groove">Groove</button>
+  <button class="sort-btn" data-sort="danceability">Dance</button>
+  <button class="sort-btn" data-sort="arousal">Arousal</button>
+  <button class="sort-btn" data-sort="tonal">Tonal</button>
+  <button class="sort-btn" data-sort="timbre">Timbre</button>
+  <button class="sort-btn" data-sort="approachability">Approach</button>
+  <button class="sort-btn" data-sort="engagement">Engage</button>
+  <button class="sort-btn" data-sort="warmup">Warmup</button>
+  <button class="sort-btn" data-sort="build">Build</button>
+  <button class="sort-btn" data-sort="peak">Peak</button>
+  <button class="sort-btn" data-sort="reset">Reset</button>
+  <button class="sort-btn" data-sort="winddown">Wind-down</button>
+</div>
+
+<div id="grid"><div class="msg">Loading…</div></div>
+<div id="pagination"></div>
+
+<script>
+const PAGE_SIZE = 10;
+let profiles    = [];
+let sortKey     = 'artist';
+let query       = '';
+let currentPage = 0;
+
+const SCORE_COLOR = {
+  energy:           '#cf8e5e',
+  groove:           '#5eaacf',
+  danceability:     '#cf7ecf',
+  arousal:          '#cf5e5e',
+  tonal:            '#cfcf5e',
+  timbre_bright:    '#5ecfcf',
+  approachability:  '#cf7eaa',
+  engagement:       '#7e7ecf',
+  vocal_probability:'#aaaaaa',
+};
+
+const PHASE_COLOR = {
+  warmup_score:   '#5ecf8a',
+  build_score:    '#7e9ecf',
+  peak_score:     '#cf7e7e',
+  reset_score:    '#cfcf7e',
+  winddown_score: '#7ecfcf',
+};
+
+function pct(v)    { return v == null ? '—' : Math.round(v * 100) + '%'; }
+function pctN(v)   { return v == null ? 0   : Math.round(v * 100); }
+function fmtBpm(v) { return v == null ? '—' : v.toFixed(1); }
+function fmtDur(s) {
+  if (s == null) return '—';
+  return `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+}
+
+function scoreRow(label, key, val) {
+  const color = SCORE_COLOR[key] || '#888';
+  const w = pctN(val);
+  return `
+    <div class="score-row">
+      <div class="score-head">
+        <span class="score-name">${label}</span>
+        <span class="score-pct">${pct(val)}</span>
+      </div>
+      <div class="bar"><div class="bar-fill" style="width:${w}%;background:${color}"></div></div>
+    </div>`;
+}
+
+function phaseRow(label, key, val) {
+  const color = PHASE_COLOR[key] || '#888';
+  const w = pctN(val);
+  return `
+    <div class="score-row">
+      <div class="score-head">
+        <span class="score-name">${label}</span>
+        <span class="score-pct">${pct(val)}</span>
+      </div>
+      <div class="bar"><div class="bar-fill" style="width:${w}%;background:${color}"></div></div>
+    </div>`;
+}
+
+function renderCard(p) {
+  const title  = p.title  || p.track_id;
+  const artist = p.artist || '';
+
+  const camelot = p.camelot
+    ? `<span class="camelot-badge">${p.camelot}</span>`
+    : '<span style="color:var(--muted)">—</span>';
+
+  const genres = (p.genres || [])
+    .map(g => `<span class="genre-tag">${g.label}</span>`)
+    .join('');
+
+  return `
+  <div class="card">
+
+    <div class="card-section">
+      <div class="card-title" title="${title}">${title}</div>
+      <div class="card-artist">${artist || '<span style="color:var(--muted)">N/A</span>'}</div>
+      <div class="meta-row">
+        <div class="meta-item">
+          <span class="meta-label">Key</span>
+          <span class="meta-value">${camelot}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">BPM</span>
+          <span class="meta-value">${fmtBpm(p.bpm)}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Duration</span>
+          <span class="meta-value">${fmtDur(p.duration)}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-section">
+      <div class="section-label">Audio profile</div>
+      <div class="scores-grid">
+        ${scoreRow('Energy',       'energy',            p.energy)}
+        ${scoreRow('Groove',       'groove',            p.groove)}
+        ${scoreRow('Danceability', 'danceability',      p.danceability)}
+        ${scoreRow('Arousal',      'arousal',           p.arousal)}
+        ${scoreRow('Tonal',        'tonal',             p.tonal)}
+        ${scoreRow('Timbre',       'timbre_bright',     p.timbre_bright)}
+        ${scoreRow('Approachab.', 'approachability',   p.approachability)}
+        ${scoreRow('Engagement',   'engagement',        p.engagement)}
+      </div>
+    </div>
+
+    <div class="card-section">
+      <div class="section-label">Phase suitability</div>
+      <div class="phases-grid">
+        ${phaseRow('Warm-up',   'warmup_score',   p.warmup_score)}
+        ${phaseRow('Build',     'build_score',    p.build_score)}
+        ${phaseRow('Peak',      'peak_score',     p.peak_score)}
+        ${phaseRow('Reset',     'reset_score',    p.reset_score)}
+        ${phaseRow('Wind-down', 'winddown_score', p.winddown_score)}
+      </div>
+    </div>
+
+    ${genres ? `<div class="card-section"><div class="genres">${genres}</div></div>` : ''}
+
+  </div>`;
+}
+
+function sortVal(p, key) {
+  switch (key) {
+    case 'artist':        return (p.artist || '').toLowerCase() + (p.title || '').toLowerCase();
+    case 'title':         return (p.title  || '').toLowerCase();
+    case 'bpm':           return p.bpm              ?? -1;
+    case 'energy':        return p.energy            ?? -1;
+    case 'groove':        return p.groove            ?? -1;
+    case 'danceability':  return p.danceability      ?? -1;
+    case 'arousal':       return p.arousal           ?? -1;
+    case 'tonal':         return p.tonal             ?? -1;
+    case 'timbre':        return p.timbre_bright      ?? -1;
+    case 'approachability': return p.approachability ?? -1;
+    case 'engagement':    return p.engagement        ?? -1;
+    case 'warmup':        return p.warmup_score      ?? -1;
+    case 'build':         return p.build_score       ?? -1;
+    case 'peak':          return p.peak_score        ?? -1;
+    case 'reset':         return p.reset_score       ?? -1;
+    case 'winddown':      return p.winddown_score    ?? -1;
+    default: return 0;
+  }
+}
+
+function render() {
+  const q = query.toLowerCase();
+  let list = profiles.filter(p =>
+    !q
+    || (p.artist || '').toLowerCase().includes(q)
+    || (p.title  || '').toLowerCase().includes(q)
+  );
+
+  list.sort((a, b) => {
+    const av = sortVal(a, sortKey);
+    const bv = sortVal(b, sortKey);
+    if (typeof av === 'string') return av < bv ? -1 : av > bv ? 1 : 0;
+    return bv - av;
+  });
+
+  const totalPages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
+  if (currentPage >= totalPages) currentPage = totalPages - 1;
+
+  const page = list.slice(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE);
+
+  const grid = document.getElementById('grid');
+  grid.innerHTML = page.length
+    ? page.map(renderCard).join('')
+    : '<div class="msg">No tracks found.</div>';
+
+  document.getElementById('stats').textContent =
+    `${list.length} / ${profiles.length} tracks`;
+
+  renderPagination(totalPages);
+}
+
+function renderPagination(totalPages) {
+  const el = document.getElementById('pagination');
+  if (totalPages <= 1) { el.innerHTML = ''; return; }
+
+  const prev = `<button class="page-btn" id="pg-prev" ${currentPage === 0 ? 'disabled' : ''}>‹</button>`;
+  const next = `<button class="page-btn" id="pg-next" ${currentPage >= totalPages - 1 ? 'disabled' : ''}>›</button>`;
+
+  // Show up to 7 page buttons around current page
+  let pages = '';
+  const range = 3;
+  for (let i = 0; i < totalPages; i++) {
+    if (i === 0 || i === totalPages - 1 || Math.abs(i - currentPage) <= range) {
+      pages += `<button class="page-btn ${i === currentPage ? 'active' : ''}" data-page="${i}">${i + 1}</button>`;
+    } else if (Math.abs(i - currentPage) === range + 1) {
+      pages += `<span id="page-info">…</span>`;
+    }
+  }
+
+  el.innerHTML = prev + pages + next;
+
+  el.querySelector('#pg-prev')?.addEventListener('click', () => { currentPage--; render(); window.scrollTo(0,0); });
+  el.querySelector('#pg-next')?.addEventListener('click', () => { currentPage++; render(); window.scrollTo(0,0); });
+  el.querySelectorAll('.page-btn[data-page]').forEach(btn => {
+    btn.addEventListener('click', () => { currentPage = +btn.dataset.page; render(); window.scrollTo(0,0); });
+  });
+}
+
+async function load() {
+  try {
+    profiles = await fetch('/api/profiles').then(r => r.json());
+    render();
+  } catch {
+    document.getElementById('grid').innerHTML =
+      '<div class="msg">Failed to load library data.</div>';
+  }
+}
+
+document.getElementById('search').addEventListener('input', e => {
+  query = e.target.value;
+  currentPage = 0;
+  render();
+});
+
+document.querySelectorAll('.sort-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    sortKey = btn.dataset.sort;
+    currentPage = 0;
+    document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    render();
+  });
+});
+
+load();
+</script>
+</body>
+</html>
