@@ -162,6 +162,7 @@ body{background:var(--bg);color:var(--text);font:13px/1.5 'Inter',system-ui,sans
 .deck-vol{
   -webkit-appearance:none;appearance:none;
   width:50px;height:3px;background:var(--b2);border-radius:2px;cursor:pointer;outline:none;flex-shrink:0;
+  touch-action:pan-x;
 }
 .deck-vol::-webkit-slider-thumb{
   -webkit-appearance:none;width:9px;height:9px;border-radius:50%;
@@ -182,6 +183,7 @@ body{background:var(--bg);color:var(--text);font:13px/1.5 'Inter',system-ui,sans
 .deck-tempo{
   -webkit-appearance:none;appearance:none;
   width:60px;height:3px;background:var(--b2);border-radius:2px;cursor:pointer;outline:none;flex-shrink:0;
+  touch-action:pan-x;
 }
 .deck-tempo::-webkit-slider-thumb{
   -webkit-appearance:none;width:9px;height:9px;border-radius:50%;
@@ -204,6 +206,7 @@ body{background:var(--bg);color:var(--text);font:13px/1.5 'Inter',system-ui,sans
 #xfader{
   -webkit-appearance:none;appearance:none;
   width:100%;height:4px;background:var(--b2);border-radius:2px;cursor:pointer;outline:none;
+  touch-action:pan-x;
 }
 #xfader::-webkit-slider-thumb{
   -webkit-appearance:none;width:14px;height:14px;border-radius:50%;
@@ -344,6 +347,38 @@ body{background:var(--bg);color:var(--text);font:13px/1.5 'Inter',system-ui,sans
   font-size:15px;padding:2px 4px;flex-shrink:0;transition:color .1s;
 }
 .pl-remove:hover{color:#d44e4e}
+.pl-move{
+  display:flex;flex-direction:column;gap:1px;flex-shrink:0;
+}
+.pl-move-btn{
+  background:none;border:none;color:var(--t3);cursor:pointer;
+  font-size:10px;line-height:1;padding:1px 3px;transition:color .1s;
+}
+.pl-move-btn:hover{color:var(--text)}
+.pl-move-btn:disabled{opacity:.2;cursor:default}
+.pl-load{
+  display:flex;flex-direction:column;gap:2px;flex-shrink:0;
+}
+.pl-load-btn{
+  background:none;border:1px solid var(--b2);border-radius:3px;
+  cursor:pointer;font-size:8px;font-weight:700;padding:1px 5px;
+  transition:all .1s;white-space:nowrap;
+}
+.pl-load-btn.la{color:#4e9fd4;border-color:rgba(78,159,212,.3)}
+.pl-load-btn.la:hover{background:rgba(78,159,212,.15)}
+.pl-load-btn.lb{color:#c47ed4;border-color:rgba(196,126,212,.3)}
+.pl-load-btn.lb:hover{background:rgba(196,126,212,.15)}
+/* load buttons on candidates */
+.c-load{display:flex;flex-direction:column;gap:2px;flex-shrink:0}
+.c-load-btn{
+  background:none;border:1px solid var(--b2);border-radius:3px;
+  cursor:pointer;font-size:8px;font-weight:700;padding:1px 5px;
+  transition:all .1s;white-space:nowrap;
+}
+.c-load-btn.la{color:#4e9fd4;border-color:rgba(78,159,212,.3)}
+.c-load-btn.la:hover{background:rgba(78,159,212,.15)}
+.c-load-btn.lb{color:#c47ed4;border-color:rgba(196,126,212,.3)}
+.c-load-btn.lb:hover{background:rgba(196,126,212,.15)}
 /* nav tabs in topbar */
 #nav-tabs{display:flex;margin-left:4px;flex-shrink:0}
 .nav-tab{
@@ -494,7 +529,7 @@ body{background:var(--bg);color:var(--text);font:13px/1.5 'Inter',system-ui,sans
 #deck-modal-tempo{display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--b1);padding-top:12px}
 #deck-modal-tempo-row{display:flex;align-items:center;gap:10px}
 #deck-modal-tempo label{font-size:10px;color:var(--t2);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
-#deck-modal-tempo-slider{flex:1;-webkit-appearance:none;appearance:none;height:4px;background:var(--b2);border-radius:2px;outline:none}
+#deck-modal-tempo-slider{flex:1;-webkit-appearance:none;appearance:none;height:4px;background:var(--b2);border-radius:2px;outline:none;touch-action:pan-x}
 #deck-modal-tempo-slider::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--text);cursor:pointer}
 #deck-modal-tempo-slider::-moz-range-thumb{width:14px;height:14px;border:none;border-radius:50%;background:var(--text);cursor:pointer}
 #deck-modal-bpm{font-size:11px;font-variant-numeric:tabular-nums;min-width:46px;text-align:right;color:var(--t2)}
@@ -1920,10 +1955,24 @@ function renderCandidatesList() {
           ${miniRow('Flow', bd.flowS)}
         </div>
       </div>
+      <div class="c-load">
+        <button class="c-load-btn la" data-idx="${i}" data-deck="a">A</button>
+        <button class="c-load-btn lb" data-idx="${i}" data-deck="b">B</button>
+      </div>
       <button class="add-btn" data-idx="${i}" title="Add to playlist">+</button>
     </div>`;
   }).join('');
 
+  list.querySelectorAll('.c-load-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const item = builderShown[parseInt(btn.dataset.idx)];
+      if (!item) return;
+      const p = item.profile;
+      const src = `/api/audio/${encodeURIComponent(currentLibrary)}/${encodeURIComponent(p.track_id)}`;
+      loadDeck(btn.dataset.deck, src, p.title || p.track_id, p.artist || null, p.bpm || null);
+    });
+  });
   list.querySelectorAll('.add-btn').forEach(btn => {
     btn.addEventListener('click', e => {
       e.stopPropagation();
@@ -1988,6 +2037,10 @@ function renderPlaylist() {
       transInfo = `<span class="pl-transition">${p.camelot} · ${hLabel}${bpmStr}</span>`;
     }
     return `<div class="pl-row">
+      <div class="pl-move">
+        <button class="pl-move-btn" data-idx="${i}" data-dir="up" ${i===0?'disabled':''}>▲</button>
+        <button class="pl-move-btn" data-idx="${i}" data-dir="dn" ${i===playlist.length-1?'disabled':''}>▼</button>
+      </div>
       <span class="pl-num">${i+1}</span>
       <span class="pl-dot" style="background:${color}" title="${entry.phase}"></span>
       <div class="pl-info">
@@ -1997,9 +2050,33 @@ function renderPlaylist() {
           ${transInfo}
         </div>
       </div>
+      <div class="pl-load">
+        <button class="pl-load-btn la" data-idx="${i}" data-deck="a">A</button>
+        <button class="pl-load-btn lb" data-idx="${i}" data-deck="b">B</button>
+      </div>
       <button class="pl-remove" data-idx="${i}" title="Remove">×</button>
     </div>`;
   }).join('');
+
+  listEl.querySelectorAll('.pl-move-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const i = parseInt(btn.dataset.idx);
+      const j = btn.dataset.dir === 'up' ? i - 1 : i + 1;
+      if (j < 0 || j >= playlist.length) return;
+      [playlist[i], playlist[j]] = [playlist[j], playlist[i]];
+      renderPlaylist();
+    });
+  });
+
+  listEl.querySelectorAll('.pl-load-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const entry = playlist[parseInt(btn.dataset.idx)];
+      if (!entry) return;
+      const p = entry.profile;
+      const src = `/api/audio/${encodeURIComponent(currentLibrary)}/${encodeURIComponent(p.track_id)}`;
+      loadDeck(btn.dataset.deck, src, p.title || p.track_id, p.artist || null, p.bpm || null);
+    });
+  });
 
   listEl.querySelectorAll('.pl-remove').forEach(btn => {
     btn.addEventListener('click', () => {
